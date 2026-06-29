@@ -668,10 +668,9 @@ function genPubStrengthPlayer(pubStats){
 }
 
 function genPubTeam(name,pubStats){
-  // Two teams tied to pub strength — regulars who suit the pub's quiz style
   const members=[];
   for(let i=0;i<5;i++) members.push(genPubStrengthPlayer(pubStats));
-  return{name,members,score:0,origin:'pub'};
+  return{name,members,score:0,origin:'pub',degradation:rnd(2,6)};
 }
 
 function genRejectTeam(name,allPickSets,pickedIndices){
@@ -685,7 +684,7 @@ function genRejectTeam(name,allPickSets,pickedIndices){
   // Each reject team gets 5 of the 10 rejected players
   rejected.sort(()=>Math.random()-0.5);
   const members=rejected.slice(0,5).map(p=>p.stats);
-  return{name,members,score:0,origin:'rejects'};
+  return{name,members,score:0,origin:'rejects',degradation:rnd(2,6)};
 }
 
 function simRivalRound(team,roundObj,pubSpecialist){
@@ -949,6 +948,12 @@ function startMatch(){
 
       // Simulate rivals for this round
       rivals.forEach(rv=>{
+        if(ri>0){
+          rv.members.forEach(m=>{
+            CORE_STATS.forEach(s=>{m[s]=Math.max(5,m[s]-rv.degradation);});
+            if(m.specialistVal!==undefined) m.specialistVal=Math.max(5,m.specialistVal-rv.degradation);
+          });
+        }
         rv.score+=simRivalRound(rv,roundObj,pub.stats.specialist);
       });
 
