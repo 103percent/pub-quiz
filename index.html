@@ -112,6 +112,21 @@
   .status-drunk{font-size:11px;color:var(--muted);text-align:right}
   .continue-btn{display:block;width:100%;margin-top:12px;padding:12px;background:var(--amber);color:#000;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;border:none;border-radius:6px;cursor:pointer;transition:opacity 0.15s}
   .continue-btn:active{opacity:0.8}
+  .coach-panel{margin:10px 0;background:var(--pub-mid);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+  .coach-title{font-family:'Oswald',sans-serif;font-size:11px;color:var(--amber);letter-spacing:1px;margin-bottom:8px}
+  .coach-cards{display:flex;flex-direction:column;gap:6px}
+  .coach-card{background:var(--pub-card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color 0.15s}
+  .coach-card:hover{border-color:var(--amber)}
+  .coach-card-name{font-family:'Oswald',sans-serif;font-size:13px;color:var(--cream);margin-bottom:2px}
+  .coach-card-desc{font-size:10px;color:var(--muted);line-height:1.4}
+  .coach-card-type{font-size:9px;letter-spacing:1px;margin-bottom:4px}
+  .type-team{color:#6fcf6f}.type-individual{color:var(--amber-light)}.type-targeted{color:#cf9f6f}.type-pub{color:#9f9fff}
+  .nominate-panel{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .nominate-btn{background:var(--pub-card);border:1px solid var(--amber);border-radius:4px;padding:5px 10px;color:var(--cream);font-family:'Oswald',sans-serif;font-size:12px;cursor:pointer}
+  .coach-result{margin-top:8px;padding:8px 10px;border-radius:6px;font-size:12px;line-height:1.5}
+  .result-good{background:#1a3a1a;border:1px solid #6fcf6f;color:#6fcf6f}
+  .result-bad{background:#3a1a1a;border:1px solid #cf6f6f;color:#cf6f6f}
+  .result-wild{background:#1a1a3a;border:1px solid var(--amber-light);color:var(--amber-light)}
   .epilogue{font-size:12px;color:var(--muted);font-style:italic;line-height:1.6;margin:12px 0;padding:10px 0;border-top:1px solid var(--border)}
   .replay-btn{display:block;width:100%;margin-top:16px;padding:12px;background:transparent;color:var(--amber);border:2px solid var(--amber);font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;border-radius:6px;cursor:pointer}
   #sticky-board{padding:0 4px}
@@ -849,6 +864,299 @@ function genEpilogue(picks,playerState,pos,teamName,pubName,teamScore){
   const endings = pos===1?ENDINGS_WIN:pos<=2?ENDINGS_MID:ENDINGS_LOSE;
   return pick(endings);
 }
+
+// ── COACHING EVENTS ──────────────────────────────────────────────────────────
+const COACH_EVENTS=[
+  // TEAM (all-or-nothing)
+  {id:'talk',    name:'Rousing Team Talk',      type:'team',       desc:'Fire everyone up before the next round. Works brilliantly or falls completely flat.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"The speech started well. Then it kept going. The team glazed over. Social across the board takes a hit.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-12);})};
+     if(r>=90) return{outcome:'wild',text:"Absolute scenes. Goosebumps. Everyone is locked in and buzzing.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);CORE_STATS.forEach(s=>{p.stats[s]=Math.min(90,p.stats[s]+8);});})};
+     return{outcome:'good',text:"Good energy in the group. Everyone heads into the next round feeling positive.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+10);})};
+   }},
+  {id:'strategy',name:'Quiz Strategy Session',  type:'team',       desc:'Get everyone on the same page. Coordinate who answers what. Could cause paralysis by analysis.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"Too much thinking. Everyone is in their head. Stat debuff incoming.",
+       fn:(picks,ps)=>picks.forEach(p=>{CORE_STATS.forEach(s=>{p.stats[s]=Math.max(5,p.stats[s]-8);});})};
+     if(r>=90) return{outcome:'wild',text:"Perfect coordination. The team knows exactly who answers what. Massive stat boost.",
+       fn:(picks,ps)=>picks.forEach(p=>{CORE_STATS.forEach(s=>{p.stats[s]=Math.min(90,p.stats[s]+10);});})};
+     return{outcome:'good',text:"Solid plan in place. Minor boost across core stats.",
+       fn:(picks,ps)=>picks.forEach(p=>{CORE_STATS.forEach(s=>{p.stats[s]=Math.min(90,p.stats[s]+4);});})};
+   }},
+  {id:'bathroom',name:'Group Bathroom Break',   type:'team',       desc:'Everyone steps away for five minutes. Could clear heads — or someone gets lost.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"Someone got into a conversation at the bar. They come back five minutes late and completely distracted.",
+       fn:(picks,ps)=>{const p=pick(picks);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-15);ps[p.name].drunkLevel+=2;}};
+     if(r>=90) return{outcome:'wild',text:"The fresh air works miracles. Everyone sobers up and refocuses.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-3);ps[p.name].drunkMod=Math.min(5,ps[p.name].drunkMod+5);})};
+     return{outcome:'good',text:"Everyone returns a bit clearer. Drunk levels nudge down.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);})};
+   }},
+  {id:'huddle',  name:'Huddle Up',              type:'team',       desc:'Get tight as a unit. Reduces friction for the next round — unless it causes an argument.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"Someone said something. Nobody knows what. Now everyone is tense.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-8);})};
+     if(r>=90) return{outcome:'wild',text:"The team feels unbeatable. Major morale surge across the board.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+18);})};
+     return{outcome:'good',text:"Good unity. The low-social drag on the team is reduced for the next round.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+6);})};
+   }},
+  {id:'reshuffle',name:'Swap Seats',            type:'team',       desc:'Change up the seating. Fresh perspectives — or complete chaos.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"The new arrangement is worse. Nobody can find their drink and the vibe is off.",
+       fn:(picks,ps)=>picks.forEach(p=>{const s=pick(CORE_STATS);p.stats[s]=Math.max(5,p.stats[s]-10);})};
+     if(r>=90) return{outcome:'wild',text:"Perfect accidental chemistry. Everyone is sat next to exactly the right person.",
+       fn:(picks,ps)=>picks.forEach(p=>{const s=pick(CORE_STATS);p.stats[s]=Math.min(90,p.stats[s]+12);})};
+     return{outcome:'good',text:"Slightly better energy. One random stat gets a nudge up across the team.",
+       fn:(picks,ps)=>{const s=pick(CORE_STATS);picks.forEach(p=>{p.stats[s]=Math.min(90,p.stats[s]+5);});}};
+   }},
+
+  // INDIVIDUAL (each player rolls separately)
+  {id:'study',   name:'Quick Study',            type:'individual', desc:'Each player spends the break cramming their best subject. Individual rolls determine success.',
+   apply:(picks,ps,nom)=>{
+     const results=[];
+     picks.forEach(p=>{
+       const r=rnd(0,99); const fn=p.name.split(' ')[0];
+       const hi=CORE_STATS.reduce((a,b)=>p.stats[a]>=p.stats[b]?a:b);
+       if(r<15){results.push(`${fn}: overcorrects, actually worse.`);p.stats[hi]=Math.max(5,p.stats[hi]-8);}
+       else if(r>=90){results.push(`${fn}: locked in. ${STAT_EMOJI[hi]} surges.`);p.stats[hi]=Math.min(90,p.stats[hi]+15);}
+       else{results.push(`${fn}: solid. Small ${STAT_EMOJI[hi]} boost.`);p.stats[hi]=Math.min(90,p.stats[hi]+6);}
+     });
+     return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
+   }},
+  {id:'settle',  name:'Settle Down',            type:'individual', desc:'Encourage everyone to slow down on the drinks. Results vary.',
+   apply:(picks,ps,nom)=>{
+     const results=[];
+     picks.forEach(p=>{
+       const r=rnd(0,99); const fn=p.name.split(' ')[0];
+       if(r<15){results.push(`${fn}: orders another out of spite.`);ps[p.name].drunkLevel+=2;}
+       else if(r>=90){results.push(`${fn}: practically sober suddenly.`);ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-4);}
+       else{results.push(`${fn}: nurses the current one.`);ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);}
+     });
+     return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
+   }},
+  {id:'peptalk', name:'Pep Talk',               type:'individual', desc:'A word with each player. Some will respond well. Others will not.',
+   apply:(picks,ps,nom)=>{
+     const results=[];
+     picks.forEach(p=>{
+       const r=rnd(0,99); const fn=p.name.split(' ')[0];
+       if(r<15){results.push(`${fn}: takes it badly.`);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-10);}
+       else if(r>=90){results.push(`${fn}: transformed. Full confidence.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);}
+       else{results.push(`${fn}: appreciated it.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+8);}
+     });
+     return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
+   }},
+  {id:'walkoff', name:'Walk It Off',            type:'individual', desc:"Encourage each player to shake off their mistakes. Resilience kicks in.",
+   apply:(picks,ps,nom)=>{
+     const results=[];
+     picks.forEach(p=>{
+       const r=rnd(0,99); const fn=p.name.split(' ')[0];
+       const resilBonus=Math.round(p.stats.resilience/20);
+       if(r<15){results.push(`${fn}: can't let it go.`);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-8);}
+       else if(r>=90){results.push(`${fn}: completely reset.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+15+resilBonus);}
+       else{results.push(`${fn}: mostly fine.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+4+resilBonus);}
+     });
+     return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
+   }},
+  {id:'tiger',   name:'Eye of the Tiger',       type:'individual', desc:'Each player digs into their specialist subject. Sharp focus, or total overthink.',
+   apply:(picks,ps,nom)=>{
+     const results=[];
+     picks.forEach(p=>{
+       const r=rnd(0,99); const fn=p.name.split(' ')[0];
+       if(r<15){results.push(`${fn}: spirals. Specialist stat drops.`);p.stats.specialistVal=Math.max(5,p.stats.specialistVal-12);}
+       else if(r>=90){results.push(`${fn}: unstoppable in their niche.`);p.stats.specialistVal=Math.min(99,p.stats.specialistVal+20);}
+       else{results.push(`${fn}: sharper.`);p.stats.specialistVal=Math.min(99,p.stats.specialistVal+8);}
+     });
+     return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
+   }},
+
+  // TARGETED (nominate one player, stronger effects)
+  {id:'incharge',name:'Put Them In Charge',     type:'targeted',   desc:'Nominate one player to lead. Big confidence surge — but cockiness may spiral.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99); const fn=nom.name.split(' ')[0];
+     if(r<15) return{outcome:'backfire',text:`${fn} immediately makes two bad calls. The team lose faith fast.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-20);}};
+     if(r>=90) return{outcome:'wild',text:`${fn} is absolutely born for this. Stat surge and the team rally behind them.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+30);CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+12);});}};
+     return{outcome:'good',text:`${fn} steps up. Confident and focused going into the next round.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+18);}};
+   }},
+  {id:'quietword',name:'Quiet Word',            type:'targeted',   desc:'Take a troublesome player aside. Could calm them right down — or make things worse.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99); const fn=nom.name.split(' ')[0];
+     if(r<15) return{outcome:'backfire',text:`${fn} does not take it well. Storms back to the table.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-18);}};
+     if(r>=90) return{outcome:'wild',text:`${fn} nods slowly. Something clicks. Complete transformation.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+25);}};
+     return{outcome:'good',text:`${fn} takes it on board. Noticeably calmer.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+15);}};
+   }},
+  {id:'sitdown', name:'Sit Them Down',          type:'targeted',   desc:'Firmly bench a disruptive player for one question. They comply — but may resent it.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99); const fn=nom.name.split(' ')[0];
+     if(r<15) return{outcome:'backfire',text:`${fn} refuses. Now they're louder than before.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-20);ps[nom.name].drunkLevel+=1;}};
+     if(r>=90) return{outcome:'wild',text:`${fn} actually needed this. Comes back sharper and quieter.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(20,Math.min(65,ps[nom.name].currentSocial));CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+8);});}};
+     return{outcome:'good',text:`${fn} sulks briefly then settles. Social dampened but disruption reduced.`,
+       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(15,Math.min(55,ps[nom.name].currentSocial));}};
+   }},
+  {id:'dd',      name:'Designated Driver',      type:'targeted',   desc:'One player goes on soft drinks. No more drunk degradation — and a focus bonus.',
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99); const fn=nom.name.split(' ')[0];
+     if(r<15) return{outcome:'backfire',text:`${fn} agrees, then immediately orders a pint out of habit.`,
+       fn:(picks,ps)=>{ps[nom.name].drunkLevel+=2;}};
+     if(r>=90) return{outcome:'wild',text:`${fn} is suddenly the sharpest person at the table. Massive stat boost.`,
+       fn:(picks,ps)=>{ps[nom.name].drunkLevel=0;ps[nom.name].drunkMod=8;CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+10);});}};
+     return{outcome:'good',text:`${fn} switches to water. Drunk level frozen and focus improves.`,
+       fn:(picks,ps)=>{ps[nom.name].drunkLevel=Math.max(0,ps[nom.name].drunkLevel-2);ps[nom.name].drunkMod=Math.min(5,ps[nom.name].drunkMod+5);}};
+   }},
+  {id:'spotlight',name:'Spotlight',             type:'targeted',   desc:"Put one player on point for the specialist round. Huge upside — or complete stage fright.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99); const fn=nom.name.split(' ')[0];
+     if(r<15) return{outcome:'backfire',text:`${fn} freezes under the pressure. Specialist stat craters.`,
+       fn:(picks,ps)=>{nom.stats.specialistVal=Math.max(5,nom.stats.specialistVal-20);}};
+     if(r>=90) return{outcome:'wild',text:`${fn} is in the zone. Maximum specialist knowledge unlocked.`,
+       fn:(picks,ps)=>{nom.stats.specialistVal=Math.min(99,nom.stats.specialistVal+25);}};
+     return{outcome:'good',text:`${fn} feels ready. Specialist stat boosted significantly.`,
+       fn:(picks,ps)=>{nom.stats.specialistVal=Math.min(99,nom.stats.specialistVal+14);}};
+   }},
+
+  // PUB (chaotic)
+  {id:'round',   name:'Get a Round In',         type:'pub',        desc:"Buy everyone a drink. Guaranteed morale boost — and guaranteed drunk increase.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"The bar takes ten minutes. The team loses focus waiting. Drunk levels rise anyway.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=2;ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-5);})};
+     if(r>=90) return{outcome:'wild',text:"Perfect timing. The drinks arrive exactly right. Everyone is delighted. Social surge.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=1;ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+15);})};
+     return{outcome:'good',text:"Drinks flow. Everyone's a bit happier — and a bit more drunk.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=1;ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+8);})};
+   }},
+  {id:'fruitmachine',name:'Play the Fruit Machine',type:'pub',     desc:"Throw some coins in. Completely random outcome. Could be anything.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     const p=pick(picks); const fn=p.name.split(' ')[0];
+     const s=pick(CORE_STATS);
+     if(r<15) return{outcome:'backfire',text:`${fn} loses a fiver and comes back furious. ${STAT_EMOJI[s]} drops.`,
+       fn:(picks,ps)=>{p.stats[s]=Math.max(5,p.stats[s]-15);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-12);}};
+     if(r>=90) return{outcome:'wild',text:`Jackpot. ${fn} wins big. The entire team is on cloud nine.`,
+       fn:(picks,ps)=>picks.forEach(q=>{ps[q.name].currentSocial=Math.min(100,ps[q.name].currentSocial+20);})};
+     return{outcome:'good',text:`${fn} breaks even and returns happy enough. Minor morale boost.`,
+       fn:(picks,ps)=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+6);}};
+   }},
+  {id:'rivals',  name:'Chat to a Rival Team',   type:'pub',        desc:"Make friends with the competition. Steal intel — or get completely psyched out.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     const s=pick(CORE_STATS);
+     if(r<15) return{outcome:'backfire',text:`The rival team are alarmingly confident. The team comes back rattled. ${STAT_EMOJI[s]} drops.`,
+       fn:(picks,ps)=>picks.forEach(p=>{p.stats[s]=Math.max(5,p.stats[s]-10);})};
+     if(r>=90) return{outcome:'wild',text:`Gleaned something useful from the other table. Hints at what's coming. ${STAT_EMOJI[s]} surges.`,
+       fn:(picks,ps)=>picks.forEach(p=>{p.stats[s]=Math.min(90,p.stats[s]+12);})};
+     return{outcome:'good',text:`Friendly chat. Good vibes. Minor ${STAT_EMOJI[s]} boost from the intel.`,
+       fn:(picks,ps)=>picks.forEach(p=>{p.stats[s]=Math.min(90,p.stats[s]+5);})};
+   }},
+  {id:'food',    name:"Shall We Order Food?",   type:'pub',        desc:"Get some carbs in. Sobering effect and a potential morale boost — if the kitchen is open.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     if(r<15) return{outcome:'backfire',text:"Kitchen closed. Someone suggested coming to a pub with no food. Everyone is annoyed. Social drops.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-10);})};
+     if(r>=90) return{outcome:'wild',text:"Perfect timing. Food arrives fast, it's great, everyone sobers up and refocuses completely.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-3);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+12);})};
+     return{outcome:'good',text:"Food helps. Drunk levels nudge down across the board and the team settles.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+5);})};
+   }},
+  {id:'challenge',name:"Challenge the Landlord", type:'pub',        desc:"Dispute a quizmaster ruling. Win the argument and morale soars. Lose it and the table looks ridiculous.",
+   apply:(picks,ps,nom)=>{
+     const r=rnd(0,99);
+     const s=pick(CORE_STATS);
+     if(r<15) return{outcome:'backfire',text:"They were right. The team were wrong, loud about it, and now everyone in the pub knows it. Social craters.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-18);})};
+     if(r>=90) return{outcome:'wild',text:"Correct challenge. The quizmaster concedes. The table erupts. Massive morale surge and a stat boost from the confidence.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);p.stats[s]=Math.min(90,p.stats[s]+8);})};
+     return{outcome:'good',text:"Marginal call, but they got the ruling overturned. The team feels vindicated. Morale up.",
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+10);})};
+   }},];
+
+function pickThreeEvents(){
+  const shuffled=[...COACH_EVENTS].sort(()=>Math.random()-0.5);
+  return shuffled.slice(0,3);
+}
+
+function showCoachingPanel(picks,playerState,ticker){
+  return new Promise(resolve=>{
+    const events=pickThreeEvents();
+    const panel=document.createElement('div');
+    panel.className='coach-panel';
+    panel.innerHTML=`<div class="coach-title">🗣 LOCKER ROOM — PICK ONE</div><div class="coach-cards" id="coach-cards"></div>`;
+    ticker.appendChild(panel);
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+    const cardsEl=panel.querySelector('#coach-cards');
+    const typeLabel={team:'TEAM EVENT',individual:'INDIVIDUAL ROLLS',targeted:'TARGET A PLAYER',pub:'PUB EVENT'};
+    const typeClass={team:'type-team',individual:'type-individual',targeted:'type-targeted',pub:'type-pub'};
+
+    events.forEach(ev=>{
+      const card=document.createElement('div');
+      card.className='coach-card';
+      card.innerHTML=`<div class="coach-card-type ${typeClass[ev.type]}">${typeLabel[ev.type]}</div><div class="coach-card-name">${ev.name}</div><div class="coach-card-desc">${ev.desc}</div>`;
+      card.onclick=()=>{
+        // Disable all cards
+        cardsEl.querySelectorAll('.coach-card').forEach(c=>{c.style.opacity='0.3';c.style.pointerEvents='none';});
+        card.style.opacity='1';card.style.border='1px solid var(--amber)';
+
+        if(ev.type==='targeted'){
+          // Show nomination panel
+          const nomDiv=document.createElement('div');
+          nomDiv.innerHTML='<div style="font-size:10px;color:var(--amber);margin:8px 0 4px;font-family:Oswald,sans-serif;letter-spacing:1px">NOMINATE A PLAYER:</div>';
+          const btns=document.createElement('div');
+          btns.className='nominate-panel';
+          picks.forEach(p=>{
+            const b=document.createElement('button');
+            b.className='nominate-btn';
+            b.textContent=p.name.split(' ')[0];
+            b.onclick=()=>{
+              btns.querySelectorAll('.nominate-btn').forEach(x=>{x.style.opacity='0.3';x.style.pointerEvents='none';});
+              b.style.opacity='1';
+              const result=ev.apply(picks,playerState,p);
+              result.fn(picks,playerState);
+              showResult(result,panel,resolve);
+            };
+            btns.appendChild(b);
+          });
+          nomDiv.appendChild(btns);
+          card.appendChild(nomDiv);
+        } else {
+          const result=ev.apply(picks,playerState,null);
+          result.fn(picks,playerState);
+          showResult(result,panel,resolve);
+        }
+      };
+      cardsEl.appendChild(card);
+    });
+  });
+}
+
+function showResult(result,panel,resolve){
+  const cls=result.outcome==='backfire'?'result-bad':result.outcome==='wild'?'result-wild':'result-good';
+  const icon=result.outcome==='backfire'?'💥':result.outcome==='wild'?'⚡':'✓';
+  const resDiv=document.createElement('div');
+  resDiv.className=`coach-result ${cls}`;
+  resDiv.textContent=`${icon} ${result.text}`;
+  panel.appendChild(resDiv);
+  resDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
+  setTimeout(resolve,1200);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function startMatch(){
   document.getElementById('draft-screen').style.display='none';
   const ms=document.getElementById('match-screen');
@@ -1221,6 +1529,9 @@ function startMatch(){
       await addLine(`<div class="status-panel"><div class="status-title">END OF ROUND STATUS</div>${statusLines}</div>`,600);
 
       const isLast=ri===rounds.length-1;
+      if(!isLast){
+        await showCoachingPanel(picks,playerState,ticker);
+      }
       const nextLabel=isLast?'See Final Results':`Continue to Round ${ri+2}${ri+1===5?' (Specialist)':''}`;
       await waitForClick(nextLabel);
     }
