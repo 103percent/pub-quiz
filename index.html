@@ -546,7 +546,7 @@ function genPlayer(){
     attempts++;
   }while(usedNames.has(fn)&&attempts<20);
   usedNames.add(fn);
-  const total=rnd(200,350);
+  const total=rnd(200,400);
   const shuffled=[...CORE_STATS].sort(()=>Math.random()-0.5);
   const vals=distributeStats(total,5,20,90);
   const stats={};
@@ -637,7 +637,7 @@ function genPubStrengthPlayer(pubStats){
   // Fixed budget range of 200-300 so an optimally drafted team (~320+) reliably beats them.
   // The pub's stat distribution biases which categories are strong, preserving strategic flavour,
   // but the overall ceiling is kept below what a good drafter can achieve.
-  const budget=rnd(240,340);
+  const budget=rnd(240,290);
   const stats={};
   // Weight the distribution toward the pub's stronger categories
   const weights=CORE_STATS.map(s=>pubStats[s]);
