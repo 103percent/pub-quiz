@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pub Quiz Draft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --pub-dark:#1a1a2e;--pub-mid:#16213e;--pub-card:#0f3460;
+    --amber:#e8a020;--amber-light:#f5c842;--cream:#f0e6d0;
+    --green:#2d5a27;--green-light:#4a8f3f;--red:#8b1a1a;
+    --muted:#8a9bb5;--border:#2a3a5e;
+  }
+  html,body{height:100%;background:var(--pub-dark)}
+  body{color:var(--cream);font-family:'Share Tech Mono',monospace;overflow-x:hidden}
+  #app{max-width:420px;margin:0 auto;padding:0 0 60px}
+
+  /* HEADER / PUB BOARD */
+  .pub-board{background:linear-gradient(180deg,#0a0a1a 0%,var(--pub-mid) 100%);border-bottom:3px solid var(--amber);padding:12px 16px;position:sticky;top:0;z-index:10}
+  .pub-name{font-family:'Oswald',sans-serif;font-size:13px;color:var(--amber-light);letter-spacing:3px;text-transform:uppercase;text-align:center;opacity:0.7}
+  .quiz-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:var(--cream);text-align:center;line-height:1.2;margin:4px 0}
+  .quiz-meta{text-align:center;font-size:11px;color:var(--muted);margin-bottom:8px}
+  .stat-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:8px}
+  .stat-pill{background:var(--pub-card);border:1px solid var(--border);border-radius:4px;padding:4px 2px;text-align:center}
+  .stat-pill .label{font-size:9px;color:var(--muted);display:block;line-height:1}
+  .stat-pill .val{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;display:block}
+  .stat-pill.special{border-color:var(--amber);background:#1a1000}
+  .stat-pill.special .label{color:#c8a050}
+  .stat-pill.special .val{font-size:11px;color:var(--amber-light);line-height:1.2;margin-top:2px}
+
+  /* DRAFT SECTION */
+  .draft-header{padding:10px 16px 4px;font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);letter-spacing:2px}
+  .pick-label{padding:4px 16px 6px;font-size:11px;color:var(--amber);font-family:'Oswald',sans-serif;letter-spacing:1px}
+
+  /* CARDS */
+  .cards-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 12px 12px}
+  .quiz-card{background:var(--pub-mid);border:1px solid var(--border);border-radius:8px;padding:10px 8px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;position:relative;overflow:hidden}
+  .quiz-card:active{transform:scale(0.96)}
+  .quiz-card:hover{border-color:var(--amber)}
+  .quiz-card.selected{border-color:var(--amber-light);background:#1a1200}
+  .quiz-card.dimmed{opacity:0.3;pointer-events:none}
+  .card-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--cream);line-height:1.2;margin-bottom:6px;min-height:32px}
+  .card-archetype{font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+  .card-stat-row{display:flex;justify-content:space-between;align-items:center;margin:2px 0}
+  .card-stat-row .sname{font-size:9px;color:var(--muted)}
+  .card-stat-row .sval{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600}
+  .sval.high,.val.high{color:#6fcf6f}
+  .sval.mid,.val.mid{color:var(--amber-light)}
+  .sval.low,.val.low{color:#cf6f6f}
+  .card-special{margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+  .card-special .sname{font-size:9px;color:#c8a050}
+  .card-special .sval{font-size:10px;color:var(--amber-light);font-family:'Oswald',sans-serif}
+  .selected-badge{position:absolute;top:4px;right:4px;background:var(--amber);color:#000;font-size:9px;font-family:'Oswald',sans-serif;font-weight:700;padding:1px 5px;border-radius:3px}
+
+  /* TEAM PANEL */
+  .team-panel{background:var(--pub-mid);border-top:2px solid var(--border);border-bottom:2px solid var(--border);padding:10px 16px;margin-bottom:8px}
+  .team-title{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);letter-spacing:2px;margin-bottom:6px}
+  .team-slots{display:flex;gap:6px;flex-wrap:wrap}
+  .team-slot{background:var(--pub-card);border:1px dashed var(--border);border-radius:4px;padding:4px 8px;font-size:10px;color:var(--muted);min-width:60px;text-align:center;font-family:'Oswald',sans-serif}
+  .team-slot.filled{border-style:solid;border-color:var(--amber);color:var(--cream);font-size:9px}
+
+  /* GO BUTTON */
+  .team-name-wrap{padding:0 16px 8px}
+  .team-name-input{width:100%;background:var(--pub-card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--cream);font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:1px;outline:none;transition:border-color 0.15s}
+  .team-name-input::placeholder{color:var(--muted);font-size:14px}
+  .team-name-input:focus{border-color:var(--amber)}
+  .go-btn{display:block;width:calc(100% - 32px);margin:8px 16px;padding:14px;background:var(--amber);color:#000;font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:3px;text-align:center;border:none;border-radius:6px;cursor:pointer;opacity:0.3;pointer-events:none;transition:opacity 0.2s}
+  .go-btn.ready{opacity:1;pointer-events:auto}
+  .go-btn:active{transform:scale(0.98)}
+
+  /* MATCH SCREEN */
+  #match-screen{display:none;padding:0 0 40px}
+  .match-header{background:var(--pub-dark);border-bottom:3px solid var(--amber);padding:12px 16px;text-align:center;position:sticky;top:0;z-index:10}
+  .match-vs{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);letter-spacing:2px}
+  .match-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:var(--cream)}
+  .score-display{display:flex;justify-content:center;align-items:center;gap:16px;margin-top:6px}
+  .score-num{font-family:'Oswald',sans-serif;font-size:32px;font-weight:700}
+  .score-team{color:var(--amber-light)}
+  .score-opp{color:var(--muted)}
+  .score-sep{font-size:20px;color:var(--border)}
+
+  /* TICKER */
+  .ticker-wrap{padding:12px 16px}
+  .ticker-line{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.5;opacity:0;transform:translateY(4px);transition:opacity 0.3s,transform 0.3s}
+  .ticker-line.show{opacity:1;transform:none}
+  .ticker-line .round-label{font-family:'Oswald',sans-serif;font-size:10px;color:var(--amber);letter-spacing:1px;display:block;margin-bottom:2px}
+  .tick-good{color:#7ec87e}
+  .tick-bad{color:#c87e7e}
+  .tick-neutral{color:var(--cream)}
+  .tick-special{color:var(--amber-light)}
+
+  /* FINAL RESULT */
+  .final-card{margin:16px;background:var(--pub-mid);border:2px solid var(--amber);border-radius:10px;padding:16px;text-align:center}
+  .final-verdict{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px}
+  .final-pos{font-size:13px;color:var(--muted);margin-bottom:12px}
+  .final-mvp{font-size:12px;color:var(--cream);margin-bottom:12px}
+  .player-ratings{margin-top:12px;text-align:left}
+  .player-rating-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .pr-name{flex:1;font-family:'Oswald',sans-serif;font-size:13px}
+  .pr-bar{flex:2;height:6px;background:var(--pub-card);border-radius:3px;overflow:hidden}
+  .pr-fill{height:100%;border-radius:3px;transition:width 1s}
+  .pr-score{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;min-width:28px;text-align:right}
+  .status-panel{background:var(--pub-card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:6px 0}
+  .status-title{font-family:'Oswald',sans-serif;font-size:10px;color:var(--amber);letter-spacing:1px;margin-bottom:6px}
+  .status-row{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px;border-bottom:1px solid var(--border)}
+  .status-row:last-child{border-bottom:none}
+  .status-name{font-family:'Oswald',sans-serif;font-size:12px;min-width:52px;color:var(--cream)}
+  .status-mood{flex:1;font-size:11px}
+  .status-drunk{font-size:11px;color:var(--muted);text-align:right}
+  .continue-btn{display:block;width:100%;margin-top:12px;padding:12px;background:var(--amber);color:#000;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;border:none;border-radius:6px;cursor:pointer;transition:opacity 0.15s}
+  .continue-btn:active{opacity:0.8}
+  .epilogue{font-size:12px;color:var(--muted);font-style:italic;line-height:1.6;margin:12px 0;padding:10px 0;border-top:1px solid var(--border)}
+  .replay-btn{display:block;width:100%;margin-top:16px;padding:12px;background:transparent;color:var(--amber);border:2px solid var(--amber);font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;border-radius:6px;cursor:pointer}
+  #sticky-board{padding:0 4px}
+  .lb-row{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:11px;border-bottom:1px solid var(--border)}
+  .lb-row:last-child{border-bottom:none}
+  .lb-pos{font-family:'Oswald',sans-serif;font-size:12px;min-width:20px}
+  .lb-name{flex:1;font-family:'Oswald',sans-serif;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-score{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;min-width:32px;text-align:right;color:var(--amber-light)}
+
+  #draft-screen{display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="draft-screen">
+    <div class="pub-board" id="pub-board"></div>
+    <div class="draft-header">PICK YOUR TEAM</div>
+    <div id="picks-container"></div>
+    <div class="team-panel">
+      <div class="team-title">YOUR SQUAD</div>
+      <div class="team-slots" id="team-slots"></div>
+    </div>
+    <div class="team-name-wrap">
+      <input class="team-name-input" id="team-name" maxlength="40" placeholder="Name your team before heading out..." />
+    </div>
+    <button class="go-btn" id="go-btn">HEAD TO THE PUB</button>
+  </div>
+  <div id="match-screen"></div>
+</div>
+
+<script>
+const FIRST_NAMES=['Dave','Carol','Raj','Fiona','Terry','Michelle','Gary','Sandra','Noel','Janet','Barry','Denise','Kevin','Bev','Phil','Trish','Mo','Angela','Clive','Helen','Derek','Sharon','Liam','Wendy','Pat','Vicky','Norm','Elaine','Alan','Donna'];
+const LAST_NAMES=['Plunkett','Kaur','Whitmore','Okonkwo','Flanagan','Hobbs','Sugden','Briggs','Sharma','Doherty','Bellamy','Costello','Fenn','Hawthorn','Joshi','McGrath','Nowak','Osei','Petrov','Quillan'];
+
+const CORE_STATS=['Humanities','Music','Pop Culture','Sport','Puzzle'];
+const STAT_EMOJI={Humanities:'🏛️',Music:'🎵','Pop Culture':'🎬',Sport:'⚽',Puzzle:'🧩'};
+
+function genArchetype(stats){
+  const s=stats;
+  const hi=CORE_STATS.reduce((a,b)=>s[a]>=s[b]?a:b);
+  const lo=CORE_STATS.reduce((a,b)=>s[a]<=s[b]?a:b);
+  const avg=CORE_STATS.reduce((sum,k)=>sum+s[k],0)/CORE_STATS.length;
+  const spread=Math.max(...CORE_STATS.map(k=>s[k]))-Math.min(...CORE_STATS.map(k=>s[k]));
+  const social=s.social||50;
+  const specialist=s.specialistVal||50;
+  const drinking=s.drinking||5;
+  const resilience=s.resilience||50;
+  const cockiness=s.cockiness||50;
+
+  // Drinking + low resilience: emotional wreck waiting to happen
+  if(drinking>=9&&resilience<=25) return pick(['Ticking Time Bomb','Car Crash Incoming','One Round Away','Known Risk']);
+  if(drinking>=8&&cockiness>=80) return pick(['Loud & Wrong','Overconfident Menace','The Liability','Pub Goblin']);
+  if(drinking>=8) return pick(['Happy Liability','Fun but Useless','Here for the Vibe','Absolute State']);
+
+  // Social disasters
+  if(avg<42&&social<=30) return pick(['Absolute Shambles','Total Liability','Lost Cause','Chaos Agent']);
+  if(avg<42) return pick(['Dead Weight','Fog of War','Hopeless Optimist','Pub Seat Warmer']);
+  if(social<=20&&avg>=65) return pick(['Brilliant Nightmare','Toxic Asset','Knows Too Much','Impossible to Work With']);
+  if(social<=20) return pick(['Loose Cannon','Wrecking Ball','One-Man Chaos','Absolute Handful']);
+
+  // High cockiness + good knowledge: volatile star
+  if(cockiness>=85&&avg>=65) return pick(['Hot and Cold','Diva','Mercurial','All or Nothing']);
+
+  // High resilience + decent stats: the rock
+  if(resilience>=85&&avg>=60) return pick(['The Rock','Unflappable','Ice Veins','Never Flinches']);
+
+  // Stars
+  if(avg>=78&&social>=75&&resilience>=70) return pick(['The Real Deal','Complete Package','Pub Quiz Royalty','Absolute Banker']);
+  if(avg>=78) return pick(['Trivia Machine','Walking Encyclopedia','The Anchor','Stone Cold Reliable']);
+  if(social>=82&&avg>=60) return pick(['Glue of the Team','The Conductor','Crowd Favourite','Pure Class']);
+
+  // Specialist glory/shame
+  if(specialist>=85&&s[hi]>=75) return `${STAT_EMOJI[hi]} ${pick(['Cult Hero','Hidden Gem','The Ace','Secret Weapon'])}`;
+  if(specialist>=85) return pick(['Niche Legend','One-Trick Wonder','Wild Card','Niche Obsessive']);
+
+  // Spread-based
+  if(spread<=10&&resilience>=60) return pick(['Steady Eddie','Reliably Average','Safe Pair of Hands','No Surprises']);
+  if(spread<=10) return pick(['Mr Average','Beige But Useful','Remarkably Average','Could Be Worse']);
+  if(s[hi]>=78&&s[lo]<=32) return `${STAT_EMOJI[hi]}↑${STAT_EMOJI[lo]}↓ ${pick(['Feast or Famine','Boom or Bust','Hot and Cold'])}`;
+  if(s[hi]>=75) return `${STAT_EMOJI[hi]} ${pick(['Merchant','Nerd','Head','Brain','Obsessive'])}`;
+  if(s[lo]<=32) return `${STAT_EMOJI[lo]} ${pick(['Disaster','Liability','Blind Spot','Weak Link'])}`;
+
+  // Middling
+  if(avg>=60&&cockiness<=30) return pick(['Quiet Contributor','Underrated','Under the Radar','Modest but Useful']);
+  if(avg>=60) return pick(['Depends on the Night','Solid Enough','Decent Punt','Take a Chance']);
+  return pick(['Coin Flip','Could Go Either Way','Jury Out','No Guarantees']);
+}
+const SPECIALIST={
+  Humanities:['Ancient History','Royal Family','World Flags','Capital Cities','Local History','European History','Wars & Battles','Mythology'],
+  Music:['60s Music','80s Pop','K-Pop','Musical Theatre','Jazz','Classical Music','Heavy Metal','Eurovision'],
+  'Pop Culture':['Anime','80s Soaps','Coronation Street','Reality TV','True Crime','Marvel Films','Harry Potter','Celebrity Gossip'],
+  Sport:['Cricket','Formula 1','WWE','Darts','Premier League 2005-2010','Golf','Rugby Union','Olympics'],
+  Puzzle:['Anagrams','Cryptic Clues','Number Rounds','Connections','Wordplay','Logo Recognition','Map Reading','Spot the Difference']
+};
+const PUBS=[
+  {
+    name:'The Broken Compass',
+    quiz:'The Lost & Found Quiz',
+    flavour:'Heavy on Humanities and Puzzle. Regulars love a map round.',
+    bias:{Humanities:[65,95],Music:[35,60],'Pop Culture':[35,60],Sport:[35,60],Puzzle:[60,90]},
+    specialists:['World Flags','Capital Cities','Map Reading','Local History','European History']
+  },
+  {
+    name:'The Fox & Typewriter',
+    quiz:'The Literary Lock-In',
+    flavour:'Arts-heavy with strong Humanities. Music rounds tend toward the classical.',
+    bias:{Humanities:[65,90],Music:[55,80],'Pop Culture':[30,55],Sport:[25,50],Puzzle:[45,70]},
+    specialists:['Classical Music','Musical Theatre','Mythology','Ancient History','Jazz']
+  },
+  {
+    name:'The Rusty Anchor',
+    quiz:'Anchor Arms Quiz Night',
+    flavour:'Sport-obsessed. Puzzle rounds are straight picture rounds, no cleverness.',
+    bias:{Humanities:[30,55],Music:[30,55],'Pop Culture':[40,65],Sport:[70,95],Puzzle:[40,65]},
+    specialists:['Cricket','Rugby Union','Olympics','Darts','Golf']
+  },
+  {
+    name:'The Goat & Pendulum',
+    quiz:'The Pendulum Challenge',
+    flavour:'Puzzle-dominant and devilishly hard. Specialist rounds are always cerebral.',
+    bias:{Humanities:[45,70],Music:[35,60],'Pop Culture':[30,55],Sport:[30,55],Puzzle:[70,95]},
+    specialists:['Cryptic Clues','Anagrams','Number Rounds','Connections','Wordplay']
+  },
+  {
+    name:'The Lopsided Crown',
+    quiz:'Crown Jewels Quiz',
+    flavour:'Pop culture all the way. Younger crowd. Sport questions are mostly football.',
+    bias:{Humanities:[30,55],Music:[50,75],'Pop Culture':[70,95],Sport:[45,70],Puzzle:[35,60]},
+    specialists:['Reality TV','Marvel Films','Celebrity Gossip','80s Soaps','Anime']
+  },
+  {
+    name:'The Quill & Flask',
+    quiz:'The Flask Classic',
+    flavour:'A balanced quiz with a music bias. Traditional, well-run, no gimmicks.',
+    bias:{Humanities:[50,75],Music:[65,90],'Pop Culture':[45,70],Sport:[45,70],Puzzle:[45,70]},
+    specialists:['60s Music','80s Pop','Eurovision','Jazz','Classical Music']
+  },
+  {
+    name:'The Badger & Almanac',
+    quiz:'The Almanac Open',
+    flavour:'History-obsessed regulars. Anything before 1990 is fair game.',
+    bias:{Humanities:[70,95],Music:[40,65],'Pop Culture':[30,55],Sport:[35,60],Puzzle:[45,70]},
+    specialists:['Wars & Battles','Ancient History','Royal Family','European History','Mythology']
+  },
+  {
+    name:'The Blind Poet',
+    quiz:'Verse & Worse Quiz Night',
+    flavour:'Music and Pop Culture. An arty crowd. Sport is always the weakest round.',
+    bias:{Humanities:[40,65],Music:[65,90],'Pop Culture':[60,85],Sport:[20,45],Puzzle:[40,65]},
+    specialists:['Heavy Metal','K-Pop','Musical Theatre','80s Pop','Harry Potter']
+  },
+  {
+    name:'The Copper Kettle',
+    quiz:"The Kettle's On Quiz",
+    flavour:'Old-school pub quiz. Sport and Humanities. Very little pop culture nonsense.',
+    bias:{Humanities:[55,80],Music:[40,65],'Pop Culture':[30,50],Sport:[65,90],Puzzle:[40,65]},
+    specialists:['Premier League 2005-2010','Formula 1','Cricket','WWE','Golf']
+  },
+  {
+    name:'The Seven Bells',
+    quiz:'Ring the Changes Quiz',
+    flavour:'Puzzle-heavy and proud of it. Humanities is solid. Sport is an afterthought.',
+    bias:{Humanities:[55,80],Music:[40,65],'Pop Culture':[40,65],Sport:[25,50],Puzzle:[70,95]},
+    specialists:['Anagrams','Spot the Difference','Logo Recognition','Wordplay','Cryptic Clues']
+  },
+  {
+    name:'The White Hart',
+    quiz:'Hart & Soul Quiz Night',
+    flavour:'Well-rounded quiz with a sport lean. The fairest quiz in town.',
+    bias:{Humanities:[50,75],Music:[50,75],'Pop Culture':[50,75],Sport:[65,90],Puzzle:[50,75]},
+    specialists:['Rugby Union','Olympics','Formula 1','Darts','Premier League 2005-2010']
+  },
+  {
+    name:'The Crow & Compass',
+    quiz:'The Crow Flies Quiz',
+    flavour:'Modern and pop culture heavy. Strong music rounds, weak on history.',
+    bias:{Humanities:[25,50],Music:[60,85],'Pop Culture':[65,90],Sport:[40,65],Puzzle:[40,65]},
+    specialists:['K-Pop','Reality TV','True Crime','Marvel Films','Coronation Street']
+  }
+];
+const QUIZ_NAMES=['Brain Bust Thursday','Pub Quiz Royale','The Great Quiz-Off','Trivia Night Classic','Head To Head Thursday','Mastermind Monday','The Lock-In Quiz','Thinker\'s Tuesday'];
+const COMMENTARY_IMMEDIATE=[
+  '{name} knew it instantly. Pen down before the question finished.',
+  "{name} didn't even look up. Already writing.",
+  "Out of {name}'s mouth before anyone else processed the question.",
+  '{name}: immediate. No debate, no hesitation.',
+  '{name} had been waiting for that one.',
+  'Everyone looked at each other. {name} was already done.',
+  '{name} clicked their fingers. Got it.',
+  'Straight to {name}. Not even close.',
+  '{name} barely let the question finish. Written down.',
+  "That one had {name}'s name on it from the start.",
+  '{name} just knew. No discussion needed.',
+  'Not a flicker of doubt from {name}.',
+  '{name} tapped the table twice. Done.',
+  "The pen was moving before {name}'s brain had finished.",
+  '{name}. First word out. Correct.'
+];
+const COMMENTARY_PASS=[
+  '{cur} had nothing. Slid it to {next} without a word.',
+  '{cur} shook their head slowly. {next} leaned in.',
+  'Blank look from {cur}. {next} picked it up.',
+  "{cur} mouthed 'no idea'. Over to {next}.",
+  '{cur} stared at the ceiling. {next} took over.',
+  '{cur} passed. Everyone looked at {next}.',
+  '{cur} held up both hands. {next} stepped in.',
+  "Out of {cur}'s depth. {next} had a go.",
+  '{cur} pointed at {next} without saying a word.',
+  "Not {cur}'s territory. {next} knew it straight away.",
+  '{cur} went blank. Turned to {next}.',
+  "Nothing from {cur}. {next} picked up the pen.",
+  '{cur} looked pained. Quietly gestured at {next}.',
+  "Long pause from {cur}. {next} didn't wait.",
+  '{cur} drew a deep breath. Said nothing. {next} answered.'
+];
+const COMMENTARY_SAVE=[
+  '{name} pulled it out at the last second.',
+  'Just as the table was giving up — {name} had it.',
+  '{name} got there in the end. Took a while.',
+  'Three blanks, then {name} came through.',
+  "{name}: 'wait, is it...' Yes. It is.",
+  "{name} scribbled something down. Nobody was sure. Correct.",
+  'Late intervention from {name}. Gets the point.',
+  "Table nearly gave up. Then {name} said it quietly.",
+  '{name} sat on it for a moment. Then got it.',
+  "Almost ran out of time. {name} scraped it in.",
+  '{name} had something. Turned out to be right.',
+  "The table exhaled. {name} had the answer.",
+  "Came from nowhere. {name} just knew.",
+  "{name} wasn't even sure. Wrote it down anyway. Correct.",
+  "The pen went to {name} as a last resort. Paid off."
+];
+const COMMENTARY_DROP=[
+  'Nothing. Left on the table.',
+  'Went round the whole team. Nobody had a clue.',
+  'Five people, zero answers. Moving on.',
+  'Complete blank. The quizmaster moved on before they did.',
+  'They stared at each other. Still nothing.',
+  'Guessed something. Wrong. Knew it was wrong as they wrote it.',
+  'Left it blank and hoped for the best. The best did not come.',
+  'Absolute silence. Not even a guess.',
+  'Collective shrug. Point gone.',
+  "Someone wrote something. Crossed it out. Wrote nothing.",
+  'The answer was on the tip of at least three tongues. None of them got it.',
+  'Put something down. Quietly wrong.',
+  'A confident guess from nobody. A correct answer from nobody.',
+  'Blank sheet. The quizmaster made a noise. Moving on.',
+  "Somebody said Denmark. It wasn't Denmark. No answer submitted.",
+  'Argued about it until the klaxon. No answer on paper.',
+  "Three people thought they knew. They didn't. Point dropped."
+];
+const COMMENTARY_WRONG=[
+  'Confident. Wrong. Devastatingly wrong.',
+  'Argued for the wrong answer for two full minutes.',
+  'Guessed Denmark. It was not Denmark.',
+  'Wrote it down. Crossed it out. Wrote it again. Still wrong.',
+  'Said it with such certainty. Absolute silence from the table.',
+  'Nobody wanted to say it out loud. It was wrong.',
+  'Changed the right answer to the wrong one at the last second.',
+  "Wrong in a very specific, expensive way.",
+  "Committed to it. Fully, enthusiastically wrong.",
+  "The table nodded along. They shouldn't have.",
+  "Sounded plausible. Was not.",
+  "Delivered with authority. Received with disappointment.",
+  "Wrong category, wrong era, wrong answer.",
+  "Would have been right in a different question entirely.",
+  "Absolutely certain. Absolutely incorrect."
+];
+const COMMENTARY_DERAIL=[
+  '{name} keeps talking over the table. Nobody can think.',
+  '{name} announces the wrong answer loudly. The moment is gone.',
+  'Everyone had it until {name} opened their mouth.',
+  '{name} stages a full one-person debate. Time wasted. Point gone.',
+  "{name} writes something down without consulting anyone. It's wrong.",
+  "The table almost had consensus until {name} said 'actually'.",
+  '{name} confidently wrong-foots everyone.',
+  "Half the table had it. Then {name} spoke. Now nobody does.",
+  '{name} derails the whole thing with a tangent.',
+  "Point lost. {name} is already defending the wrong answer.",
+  "A perfectly good answer dies in {name}'s hands.",
+  "{name} steamrolls the table. Wrong.",
+  "Chaos. {name} is at the centre of it.",
+  "{name} goes rogue. Writes something unilaterally. Wrong.",
+  "The table knew it. Then {name} said something and nobody knows anymore."
+];
+const COMMENTARY_REDIRECT=[
+  '{peacemaker} steps in quietly. Focus restored.',
+  '{peacemaker} talks {chaos} down. Back on track.',
+  "{peacemaker} raises a hand. 'Hang on. Let's think.' It works.",
+  '{peacemaker} overrules {chaos} with a look. Just in time.',
+  '{peacemaker} writes something down and taps it. Everyone agrees.',
+  "{peacemaker} cuts through the noise. 'It\'s this. Trust me.'",
+  "{peacemaker} puts a hand on {chaos}'s arm. Calm restored.",
+  "{peacemaker} just says the answer. Quietly. It's right.",
+  'One look from {peacemaker}. {chaos} stands down.',
+  "{peacemaker} redirects without drama. The table gets back to it.",
+  "Calm voice from {peacemaker}. 'Let\'s just go with this.' Done.",
+  '{peacemaker} takes the pen. Writes the answer. That is that.'
+];
+const COMMENTARY_HIGHSOCIAL=[
+  "{name} catches {next}'s eye. {next} had it all along.",
+  '{name} spots the hesitation — nudges {next} to speak up.',
+  '{name} creates the space. {next} fills it perfectly.',
+  '{name} quietly points at {next}. {next} nods. Done.',
+  "'Let {next} answer this one.' — {name}. Good call.",
+  "{name} reads the room. Hands it straight to {next}.",
+  "A glance from {name}. {next} takes over. Works.",
+  "{name} knows who knows. Passes to {next} immediately.",
+  "{next} had something to say. {name} made sure they could say it.",
+  "{name} steps back. {next} steps forward. Exactly right."
+];
+const MOMENTUM_GOOD=[
+  'Two on the bounce. Something clicking here.',
+  'Three in a row. The table is finding its rhythm.',
+  'Back-to-back points. Starting to feel it.',
+  "On a run now. Don't overthink it.",
+  'Momentum building. Keep going.',
+  'Flowing now. Everything feels easier.',
+  "Can't seem to get one wrong at the moment.",
+  'The table is locked in.',
+  'Point after point. Something has shifted.',
+  "This is what it looks like when it works.",
+  'Three straight. The other teams are watching.',
+  "Unstoppable run. Don't jinx it."
+];
+const MOMENTUM_BAD=[
+  'Two dropped in a row. Starting to wobble.',
+  'Three blanks on the trot. Concentration slipping.',
+  'The wheels are coming off slightly.',
+  'Rough patch. Need to steady up.',
+  'Points haemorrhaging here. Not good.',
+  'Something has gone wrong. Hard to say what.',
+  'The table is rattled. Need a reset.',
+  "Can't seem to get one right at the moment.",
+  'Bad run. Really bad run.',
+  "Three gone. The other tables can sense it.",
+  'Heads dropping. Not ideal.',
+  "This is a bad stretch. Hang in there."
+];
+const MOMENTUM_RECOVERY=[
+  'Stops the bleeding. Back on the board.',
+  'Much needed. Gets the table going again.',
+  'Steadies the ship. Just in time.',
+  'That one felt important. Energy shifts.',
+  'A point. Finally. The table breathes.',
+  'Back in it. Just.',
+  "That one mattered. They know it.",
+  "Interrupts the slide. Good moment.",
+  "The table needed that. They got it.",
+  "One point. But it counts. They feel it."
+];
+const SPECIAL_COMMENTARY=[
+  'The specialist round. Everything changes.',
+  "Eyes light up across the table. Someone's been waiting for this.",
+  "The round everyone's been dreading — or desperate for.",
+  'This is what it comes down to.',
+  "Pencils hover. Who on this table knows this stuff?",
+  "The specialist round arrives. Somebody at this table is about to shine — or disappear.",
+  "Six rounds of buildup. Here we go.",
+  "This one separates the experts from the blaggers.",
+  "The room shifts. Some tables look ready. Some don't.",
+  "Everything up to now was a warm-up."
+];
+const SPECIAL_INTRO_GOOD=[
+  '{name} sits up straight. This is their round.',
+  "A quiet smile from {name}. They know every answer here.",
+  '{name} has been waiting for this since the draft.',
+  "'This is mine.' — {name}, not even quietly.",
+  '{name} cracks their knuckles. Ready.',
+  "The specialist subject is read out. {name} exhales slowly. They've got this.",
+  "Nobody else speaks. {name} leans forward.",
+  "You could see it in {name}'s face the moment the category was announced."
+];
+const SPECIAL_INTRO_BAD=[
+  "Nobody at the table looks confident. This could hurt.",
+  "Nervous glances. This is not anyone's specialist subject.",
+  'The table exchanges looks. Nobody says anything.',
+  'A long silence as the round is announced. Not ideal.',
+  "Five people. Zero expertise. This is going to be ugly.",
+  "The category is announced. Three people look at the table.",
+  "This is nobody's round. Just getting through it.",
+  "Complete lottery from here. Hope for the best."
+];
+
+function rnd(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+const _recentPicks=new Map();
+function pickFresh(arr,key,memory=3){
+  if(arr.length<=memory) return pick(arr);
+  const recent=_recentPicks.get(key)||[];
+  const fresh=arr.filter(x=>!recent.includes(x));
+  const chosen=pick(fresh.length?fresh:arr);
+  recent.push(chosen);
+  if(recent.length>memory) recent.shift();
+  _recentPicks.set(key,recent);
+  return chosen;
+}
+
+function genPub(){
+  const template=pick(PUBS);
+  const stats={};
+  CORE_STATS.forEach(s=>{
+    const [lo,hi]=template.bias[s];
+    stats[s]=rnd(Math.min(lo+10,95),Math.min(hi+10,95));
+  });
+  stats.specialist=pick(template.specialists);
+  stats.specialistVal=rnd(40,95);
+  return{name:template.name,quiz:template.quiz,flavour:template.flavour,stats};
+}
+
+function distributeStats(total,n,min,max){
+  const vals=[];
+  let remaining=total;
+  for(let i=0;i<n;i++){
+    const slotsLeft=n-i;
+    const lo=Math.max(min,remaining-(slotsLeft-1)*max);
+    const hi=Math.min(max,remaining-(slotsLeft-1)*min);
+    const v=rnd(Math.max(min,lo),Math.min(max,hi));
+    vals.push(v);
+    remaining-=v;
+  }
+  return vals;
+}
+
+const usedNames=new Set();
+function genPlayer(){
+  let fn,ln;
+  let attempts=0;
+  do{
+    fn=pick(FIRST_NAMES);
+    ln=pick(LAST_NAMES);
+    attempts++;
+  }while(usedNames.has(fn)&&attempts<20);
+  usedNames.add(fn);
+  const total=rnd(200,350);
+  const shuffled=[...CORE_STATS].sort(()=>Math.random()-0.5);
+  const vals=distributeStats(total,5,20,90);
+  const stats={};
+  shuffled.forEach((s,i)=>{stats[s]=vals[i]});
+  const sorted=[...CORE_STATS].sort((a,b)=>stats[b]-stats[a]);
+  const thirdStat=sorted[2];
+  const spec=pick(SPECIALIST[thirdStat]);
+  stats.specialist=spec;
+  stats.specialistVal=rnd(30,95);
+  stats.social=rnd(15,100);
+  stats.drinking=rnd(1,10);       // how much they drink over the night
+  stats.resilience=rnd(10,100);   // resistance to social drop after wrong answers
+  stats.cockiness=rnd(10,100);    // social inflation after correct answers
+  return{name:`${fn} ${ln}`,archetype:genArchetype(stats),stats};
+}
+
+function statColor(v){return v>=75?'high':v>=50?'mid':'low'}
+function renderStatColor(v){return`<span class="sval ${statColor(v)}">${v}</span>`}
+
+const pub=genPub();
+let picks=[];
+let allPickSets=[];
+const NUM_PICKS=5;
+
+function renderPubBoard(){
+  document.getElementById('pub-board').innerHTML=`
+    <div class="pub-name">TONIGHT AT</div>
+    <div class="quiz-title">${pub.name}</div>
+    <div class="quiz-meta">${pub.quiz}</div>
+    <div class="quiz-meta" style="font-style:italic;margin-top:2px;font-size:10px">${pub.flavour}</div>
+    <div class="stat-bar">
+      ${CORE_STATS.map(s=>`<div class="stat-pill"><span class="label">${STAT_EMOJI[s]} ${s.slice(0,4).toUpperCase()}</span><span class="val ${statColor(pub.stats[s])}">${pub.stats[s]}</span></div>`).join('')}
+      <div class="stat-pill special"><span class="label">🎲 SPEC</span><span class="val" style="font-size:13px">???</span></div>
+    </div>`;
+}
+
+function renderTeamSlots(){
+  const slots=document.getElementById('team-slots');
+  slots.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    d.className='team-slot'+(picks[i]?' filled':'');
+    d.textContent=picks[i]?picks[i].name.split(' ')[0]:'—';
+    slots.appendChild(d);
+  }
+}
+
+function renderPickSlot(idx){
+  const players=[genPlayer(),genPlayer(),genPlayer()];
+  allPickSets[idx]=players;
+  const container=document.getElementById('picks-container');
+  const section=document.createElement('div');
+  section.id=`pick-${idx}`;
+  section.innerHTML=`<div class="pick-label">PICK ${idx+1} OF 5</div>
+  <div class="cards-row">${players.map((p,pi)=>`
+    <div class="quiz-card" id="card-${idx}-${pi}" onclick="selectCard(${idx},${pi})">
+      <div class="card-name">${p.name} <span style="font-size:10px;opacity:0.7">${'🍺'.repeat(Math.ceil(p.stats.drinking/3))}</span></div>
+      <div class="card-archetype">${p.archetype}</div>
+      ${CORE_STATS.map(s=>`<div class="card-stat-row"><span class="sname">${STAT_EMOJI[s]} ${s.slice(0,4)}</span>${renderStatColor(p.stats[s])}</div>`).join('')}
+      <div class="card-special"><div class="card-stat-row"><span class="sname">${p.stats.specialist}</span><span class="sval mid" style="font-size:10px">${p.stats.specialistVal}</span></div></div>
+    </div>`).join('')}
+  </div>`;
+  container.appendChild(section);
+}
+
+function selectCard(pickIdx,cardIdx){
+  if(picks[pickIdx])return;
+  const chosen=allPickSets[pickIdx][cardIdx];
+  picks[pickIdx]=chosen;
+  for(let i=0;i<3;i++){
+    const el=document.getElementById(`card-${pickIdx}-${i}`);
+    if(i===cardIdx){el.classList.add('selected');el.innerHTML+=`<div class="selected-badge">PICKED</div>`;}
+    else el.classList.add('dimmed');
+  }
+  renderTeamSlots();
+  if(picks.filter(Boolean).length===5){checkReady();}
+  if(pickIdx<NUM_PICKS-1&&!document.getElementById(`pick-${pickIdx+1}`)){renderPickSlot(pickIdx+1)}
+}
+
+const RIVAL_TEAM_NAMES=[
+  'The Usual Suspects','The Fact Pack','Quizteama Aguilera','I Am Smarticus',
+  'Quiz Khalifa','Les Quizerables','Master Baiters','The Sherlock Homies',
+  'No Idea','Ctrl Alt Defeat','The Walking Brain Dead','Tequila Mockingbird',
+  'E=MC Hammered','Trivia Newton John','Florence and the Brain','The Big Lebowski Knowledge'
+];
+
+function genPubStrengthPlayer(pubStats){
+  // Fixed budget range of 200-300 so an optimally drafted team (~320+) reliably beats them.
+  // The pub's stat distribution biases which categories are strong, preserving strategic flavour,
+  // but the overall ceiling is kept below what a good drafter can achieve.
+  const budget=rnd(240,340);
+  const stats={};
+  // Weight the distribution toward the pub's stronger categories
+  const weights=CORE_STATS.map(s=>pubStats[s]);
+  const weightTotal=weights.reduce((a,b)=>a+b,0);
+  const vals=[];
+  let remaining=budget;
+  CORE_STATS.forEach((s,i)=>{
+    if(i===CORE_STATS.length-1){
+      vals.push(Math.min(90,Math.max(20,remaining)));
+    } else {
+      // Proportional share of budget with some randomness
+      const proportion=weights[i]/weightTotal;
+      const base=Math.round(budget*proportion);
+      const lo=Math.max(20,remaining-(CORE_STATS.length-i-1)*90);
+      const hi=Math.min(90,remaining-(CORE_STATS.length-i-1)*20);
+      const v=Math.min(hi,Math.max(lo,base+rnd(-15,15)));
+      vals.push(v);
+      remaining-=v;
+    }
+  });
+  // Shuffle so the pub's bias influences but doesn't rigidly determine each stat
+  const shuffled=CORE_STATS.map((s,i)=>({s,v:vals[i]})).sort(()=>Math.random()-0.5);
+  shuffled.forEach(({s,v})=>{stats[s]=v});
+  const sorted=[...CORE_STATS].sort((a,b)=>stats[b]-stats[a]);
+  stats.specialist=pick(SPECIALIST[sorted[2]]);
+  stats.specialistVal=rnd(30,95);
+  return stats;
+}
+
+function genPubTeam(name,pubStats){
+  // Two teams tied to pub strength — regulars who suit the pub's quiz style
+  const members=[];
+  for(let i=0;i<5;i++) members.push(genPubStrengthPlayer(pubStats));
+  return{name,members,score:0,origin:'pub'};
+}
+
+function genRejectTeam(name,allPickSets,pickedIndices){
+  // Built from the players you didn't pick
+  const rejected=[];
+  allPickSets.forEach((trio,pickIdx)=>{
+    trio.forEach((player,cardIdx)=>{
+      if(cardIdx!==pickedIndices[pickIdx]) rejected.push(player);
+    });
+  });
+  // Each reject team gets 5 of the 10 rejected players
+  rejected.sort(()=>Math.random()-0.5);
+  const members=rejected.slice(0,5).map(p=>p.stats);
+  return{name,members,score:0,origin:'rejects'};
+}
+
+function simRivalRound(team,roundObj,pubSpecialist){
+  const isSpecial=roundObj.isSpecial;
+  let pts=0;
+  for(let q=0;q<10;q++){
+    const order=[...team.members].sort(()=>Math.random()-0.5);
+    for(const m of order){
+      const isSpec=isSpecial&&m.specialist===pubSpecialist;
+      const rawStat=isSpecial?(isSpec?m.specialistVal:rnd(15,45)):blendStat(m,roundObj.weights);
+      const hitChance=Math.round((rawStat||50)*0.42)+(isSpec?12:0);
+      if(rnd(0,100)<hitChance){pts+=10;break;}
+    }
+  }
+  return pts;
+}
+
+function updateStickyBoard(rivals,yourScore,teamName){
+  const el=document.getElementById('sticky-board');
+  if(!el)return;
+  const all=[{name:teamName,score:yourScore,yours:true},...rivals.map(t=>({name:t.name,score:t.score,yours:false}))];
+  all.sort((a,b)=>b.score-a.score);
+  el.innerHTML=all.map((t,i)=>{
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const style=t.yours?'color:var(--amber-light);font-weight:bold':'color:var(--muted)';
+    return`<div class="lb-row" style="${style}">
+      <span class="lb-pos">${medal}</span>
+      <span class="lb-name">${t.name}</span>
+      <span class="lb-score">${t.score}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── ROUND GENERATION ────────────────────────────────────────────────────────
+const ROUND_NAMES={
+  // Dominant pair -> possible round names
+  'Humanities+Music':        ['Classical & Historical','Arts & Letters','Culture Through the Ages','The Highbrow Round'],
+  'Humanities+Pop Culture':  ['History & Telly','Then & Now','Famous Faces & Famous Places','Through the Decades'],
+  'Humanities+Sport':        ['Sport & History','Great Moments','Heroes & Legends','Triumphs & Disasters'],
+  'Humanities+Puzzle':       ['Word & World','Knowledge & Cunning','Brains & Learning','Letters & Lore'],
+  'Music+Pop Culture':       ['Music & Telly','Screen & Sound','Hits & Clips','Pop & Culture'],
+  'Music+Sport':             ['Sports Anthems & Stars','Stadium & Stage','Music & Medals','Fame & Sport'],
+  'Music+Puzzle':            ['Name That Tune','Lyric & Letter','Sound & Symbol','Musical Minds'],
+  'Pop Culture+Sport':       ['Sports & Celebs','Famous & Sporting','The Water Cooler Round','Stars & Sport'],
+  'Pop Culture+Puzzle':      ['Picture & Pop','Spot the Star','Faces & Phrases','The Tricky Pop Round'],
+  'Sport+Puzzle':            ['Numbers & Sport','Stats & Scores','The Tactical Round','Sport by the Book'],
+};
+
+function pickRoundName(statA,statB){
+  const key=[statA,statB].sort().join('+');
+  const options=ROUND_NAMES[key]||[`${statA} & ${statB}`];
+  return pick(options);
+}
+
+function genRounds(pubStats){
+  // Generate 5 rounds as weighted blends of 3 core stats
+  const rounds=[];
+  for(let i=0;i<5;i++){
+    // Pick 3 stats without replacement
+    const statPool=[...CORE_STATS].sort(()=>Math.random()-0.5).slice(0,3);
+    // Random weights that sum to 1: split [0,1] into 3 parts
+    const cuts=[Math.random(),Math.random()].sort((a,b)=>a-b);
+    const rawWeights=[cuts[0],cuts[1]-cuts[0],1-cuts[1]];
+    // Sort so dominant stat gets highest weight
+    rawWeights.sort((a,b)=>b-a);
+    statPool.sort((a,b)=>rawWeights[CORE_STATS.indexOf(a)]-rawWeights[CORE_STATS.indexOf(b)]);
+    // Re-sort: assign highest weight to stat with highest pub score (pub shapes round difficulty)
+    const sorted=[...statPool].sort((a,b)=>pubStats[b]-pubStats[a]);
+    const weights={};
+    sorted.forEach((s,i)=>{weights[s]=rawWeights[i];});
+
+    const name=pickRoundName(sorted[0],sorted[1]);
+
+    // Pub difficulty for this round = weighted blend of pub's stats
+    const pubDifficulty=Math.round(statPool.reduce((sum,s)=>sum+pubStats[s]*weights[s],0));
+
+    rounds.push({name,weights,stats:statPool,pubDifficulty,isSpecial:false});
+  }
+  // Specialist round stays simple
+  rounds.push({name:pub.stats.specialist,isSpecial:true,pubDifficulty:pub.stats.specialistVal});
+  return rounds;
+}
+
+function blendStat(playerStats,weights){
+  if(!weights) return 50;
+  return Math.round(Object.entries(weights).reduce((sum,[s,w])=>sum+(playerStats[s]||50)*w,0));
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+const DRINK_SLIGHT=[
+  '{name} is loosening up.',
+  '{name} seems more confident than before.',
+  '{name} is finding their voice.',
+  'A couple in and {name} is talking more.',
+];
+const DRINK_MODERATE=[
+  '{name} is clearly feeling it.',
+  '{name} is getting louder.',
+  '{name} has had one too many.',
+  '{name} is insisting on ordering another.',
+  '{name} is starting to repeat themselves.',
+];
+const DRINK_HEAVY=[
+  '{name} is absolutely hammered.',
+  '{name} just answered confidently in the wrong language.',
+  '{name} has given up writing and is just pointing.',
+  '{name} is convinced every answer is either Napoleon or Denmark.',
+  '{name} is more of a hindrance than a help at this point.',
+];
+const COCKINESS_UP=[
+  '{name} is getting cocky after that.',
+  '{name} thinks they know everything now.',
+  '{name} is starting to talk over everyone.',
+  "{name} won't let anyone else answer.",
+];
+const RESILIENCE_DOWN=[
+  '{name} has gone very quiet.',
+  '{name} is visibly deflated.',
+  '{name} is second-guessing everything now.',
+  '{name} looks like they want to go home.',
+];
+
+function genEpilogue(picks,playerState,pos,teamName,pubName,teamScore){
+  const totalPlayers=picks.length;
+
+  // Find notable players
+  const mostDrunk=picks.reduce((a,b)=>playerState[a.name].drunkLevel>=playerState[b.name].drunkLevel?a:b);
+  const mostDrunkPs=playerState[mostDrunk.name];
+  const leastDrunk=picks.reduce((a,b)=>playerState[a.name].drunkLevel<=playerState[b.name].drunkLevel?a:b);
+  const mostConfident=picks.reduce((a,b)=>playerState[a.name].currentSocial>=playerState[b.name].currentSocial?a:b);
+  const mostDeflated=picks.reduce((a,b)=>playerState[a.name].currentSocial<=playerState[b.name].currentSocial?a:b);
+  const mostDeflatedPs=playerState[mostDeflated.name];
+
+  const mnFn=mostDrunk.name.split(' ')[0];
+  const cfFn=mostConfident.name.split(' ')[0];
+  const dfFn=mostDeflated.name.split(' ')[0];
+  const ldFn=leastDrunk.name.split(' ')[0];
+
+  const ENDINGS_WIN=[
+    `${cfFn} led the celebrations loudly. ${mnFn} needed help finding their coat. The night ended at somebody else's pub.`,
+    `${teamName} left ${pubName} on a high. ${cfFn} was already talking about next week. ${mnFn} was talking about nothing coherent.`,
+    `The walk home was triumphant. ${cfFn} announced they should do this every week. ${mnFn} agreed, unconvincingly.`,
+    `${mnFn} insisted on one more round after the quiz. The team declined. ${cfFn} stayed anyway.`,
+    `${cfFn} shook the quizmaster's hand. ${mnFn} tried to as well. Missed.`,
+  ];
+  const ENDINGS_LOSE=[
+    `${dfFn} said very little on the way out. ${mnFn} said too much. The team agreed not to talk about round four.`,
+    `${cfFn} insisted they'd have won if it weren't for the specialist round. Nobody disagreed, but nobody agreed either.`,
+    `${mnFn} ordered another drink. ${dfFn} put their coat on. The debrief was quiet.`,
+    `${teamName} filed out of ${pubName} in silence. ${cfFn} broke it by blaming the questions. The others weren't so sure.`,
+    `${dfFn} stared at the score sheet for a long moment. Then put it face down. ${mnFn} didn't notice.`,
+  ];
+  const ENDINGS_MID=[
+    `${cfFn} thought they'd done better. ${dfFn} thought they'd done worse. The truth was somewhere in the middle, as it usually is.`,
+    `Not the result anyone wanted, but ${mnFn} seemed unbothered. Possibly unaware.`,
+    `${cfFn} called it a moral victory. ${dfFn} called it a Tuesday. Both went for chips.`,
+    `${teamName} left ${pubName} with their dignity mostly intact. ${mnFn} left without their scarf.`,
+    `They've done better. They've done worse. ${cfFn} promised to do better next time. ${dfFn} said nothing.`,
+  ];
+
+  const endings = pos===1?ENDINGS_WIN:pos<=2?ENDINGS_MID:ENDINGS_LOSE;
+  return pick(endings);
+}
+function startMatch(){
+  document.getElementById('draft-screen').style.display='none';
+  const ms=document.getElementById('match-screen');
+  ms.style.display='block';
+
+  const rounds=genRounds(pub.stats);
+
+  // Per-player mutable state — updated each round
+  const playerState={};
+  picks.forEach(p=>{
+    playerState[p.name]={
+      drunkLevel:0,          // accumulates over rounds
+      currentSocial:p.stats.social,  // drifts with resilience/cockiness
+      correctsTotal:0,
+      incorrectsTotal:0,
+    };
+  });
+
+  // Console output of round compositions for development inspection
+  console.log('=== ROUND COMPOSITIONS FOR: '+pub.name+' ('+pub.quiz+') ===');
+  rounds.forEach((r,i)=>{
+    if(r.isSpecial){
+      console.log(`Round ${i+1} [SPECIALIST]: ${r.name} | pub difficulty: ${r.pubDifficulty}`);
+    } else {
+      const wStr=r.stats.map(s=>`${s}: ${Math.round(r.weights[s]*100)}%`).join(', ');
+      console.log(`Round ${i+1}: "${r.name}" | blend: ${wStr} | pub difficulty: ${r.pubDifficulty}`);
+    }
+  });
+  console.log('=====================================================');
+  let teamScore=0;
+  const perRound=10;
+
+  // Work out which card was picked per pick slot
+  const pickedIndices=allPickSets.map((trio,i)=>trio.indexOf(picks[i]));
+
+  // 4 rival teams: 2 pub-strength regulars, 2 built from rejected players
+  const shuffledNames=RIVAL_TEAM_NAMES.sort(()=>Math.random()-0.5);
+  const rivals=[
+    genPubTeam(shuffledNames[0],pub.stats),
+    genPubTeam(shuffledNames[1],pub.stats),
+    genRejectTeam(shuffledNames[2],allPickSets,pickedIndices),
+    genRejectTeam(shuffledNames[3],allPickSets,pickedIndices)
+  ];
+
+  const teamName=document.getElementById('team-name').value.trim().toUpperCase();
+  ms.innerHTML=`
+    <div class="match-header">
+      <div class="match-vs">${pub.name} — ${pub.quiz}</div>
+      <div class="match-title" style="font-size:13px;color:var(--muted)">${rivals.length+1} teams competing</div>
+      <div id="sticky-board" style="margin-top:8px"></div>
+    </div>
+    <div class="ticker-wrap" id="ticker"></div>`;
+  updateStickyBoard(rivals,0,teamName);
+
+  const ticker=document.getElementById('ticker');
+
+  function addLine(html,delay){
+    return new Promise(resolve=>{
+      setTimeout(()=>{
+        const d=document.createElement('div');
+        d.className='ticker-line';
+        d.innerHTML=html;
+        ticker.appendChild(d);
+        requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('show')));
+        d.scrollIntoView({behavior:'smooth',block:'nearest'});
+        resolve();
+      },delay);
+    });
+  }
+
+  function waitForClick(label){
+    return new Promise(resolve=>{
+      const btn=document.createElement('button');
+      btn.className='continue-btn';
+      btn.textContent=label;
+      ticker.appendChild(btn);
+      btn.scrollIntoView({behavior:'smooth',block:'nearest'});
+      btn.onclick=()=>{
+        ticker.innerHTML='';
+        resolve();
+      };
+    });
+  }
+
+  async function playRounds(){
+    for(let ri=0;ri<rounds.length;ri++){
+      const roundObj=rounds[ri];
+      const isSpecial=roundObj.isSpecial;
+      const pubStat=roundObj.pubDifficulty;
+      const roundLabel=isSpecial?`SPECIALIST: ${roundObj.name.toUpperCase()}`:`ROUND ${ri+1}: ${roundObj.name.toUpperCase()}`;
+
+      if(isSpecial){
+        await addLine(`<span class="tick-special round-label">${roundLabel}</span><span class="tick-special">${pick(SPECIAL_COMMENTARY)}</span>`,700);
+      }else{
+        await addLine(`<span class="round-label">${roundLabel}</span>`,700);
+      }
+
+      // Simulate rivals for this round
+      rivals.forEach(rv=>{
+        rv.score+=simRivalRound(rv,roundObj,pub.stats.specialist);
+      });
+
+    // --- Drinking update for this round ---
+    // Each player accumulates drunk level based on their drinking stat
+    const drinkLines=[];
+    picks.forEach(p=>{
+      const ps=playerState[p.name];
+      // Drink between 0 and drinking/3 units this round
+      const unitsThisRound=Math.random()<(p.stats.drinking/10)?rnd(1,Math.ceil(p.stats.drinking/3)):0;
+      ps.drunkLevel+=unitsThisRound;
+
+      // Drunk effect: mild boost up to level 3, then degrading
+      // drunkMod: +5 at level 1-2, 0 at 3, -8 per level above 3
+      ps.drunkMod=ps.drunkLevel<=2?5:ps.drunkLevel===3?0:Math.min(40,(ps.drunkLevel-3)*8)*-1;
+
+      // Commentary on notable drinking moments (only from round 2 onwards)
+      if(ri>=1&&unitsThisRound>0){
+        const fn=p.name.split(' ')[0];
+        if(ps.drunkLevel>=7&&rnd(0,1)===0){
+          drinkLines.push({cls:'tick-bad',text:pick(DRINK_HEAVY).replaceAll('{name}',fn)});
+        } else if(ps.drunkLevel>=4&&rnd(0,2)===0){
+          drinkLines.push({cls:'tick-neutral',text:pick(DRINK_MODERATE).replaceAll('{name}',fn)});
+        } else if(ps.drunkLevel>=2&&rnd(0,3)===0){
+          drinkLines.push({cls:'tick-neutral',text:pick(DRINK_SLIGHT).replaceAll('{name}',fn)});
+        }
+      }
+    });
+
+    // --- Dynamic social: use currentSocial (updated by resilience/cockiness) ---
+    const highSocial=picks.filter(p=>playerState[p.name].currentSocial>=70);
+    const lowSocial=picks.filter(p=>playerState[p.name].currentSocial<40);
+    const rawSocialPenalty=lowSocial.reduce((s,p)=>s+(40-playerState[p.name].currentSocial),0);
+    const socialMitigation=Math.min(rawSocialPenalty,highSocial.reduce((s,p)=>s+(playerState[p.name].currentSocial-70)*0.4,0));
+    const netSocialPenalty=Math.max(0,rawSocialPenalty-socialMitigation);
+    const socialDebuff=Math.round(netSocialPenalty/5);
+
+    // Track per-round correct/incorrect per player for cockiness/resilience update
+    const roundCorrects={};
+    const roundIncorrects={};
+    picks.forEach(p=>{roundCorrects[p.name]=0;roundIncorrects[p.name]=0;});
+
+    // 10 questions per round — team collaborates on each
+    const QUESTIONS=10;
+    let roundScore=0;
+    const roundLines=[];
+
+    for(let q=0;q<QUESTIONS;q++){
+      // Shuffle player order — passing around the table
+      const order=[...picks].sort(()=>Math.random()-0.5);
+      let answered=false;
+      let attemptedBy=[];
+      let specialistGotIt=false;
+      let derailed=false;
+      let derailPlayer=null;
+      let defusedBy=null;
+
+      for(let pi=0;pi<order.length;pi++){
+        const p=order[pi];
+        const next=order[pi+1];
+        const firstName=p.name.split(' ')[0];
+        const isSpecialist=isSpecial&&p.stats.specialist===roundObj.name;
+        const ps=playerState[p.name];
+        let playerStat=isSpecial
+          ?(isSpecialist?p.stats.specialistVal:rnd(15,45))
+          :blendStat(p.stats,roundObj.weights);
+
+        // Apply social debuff and drunk modifier
+        playerStat=Math.max(5,playerStat-socialDebuff+(ps.drunkMod||0));
+
+        // Low social (dynamic): chance of derailing the question
+        if(!derailed&&ps.currentSocial<40&&rnd(0,100)>ps.currentSocial+30){
+          derailed=true;
+          derailPlayer=p;
+          // Check if a high-social player can defuse it
+          const defuser=picks.find(d=>d!==p&&playerState[d.name].currentSocial>=70);
+          if(defuser&&rnd(0,100)<playerState[defuser.name].currentSocial-50){
+            defusedBy=defuser;
+            derailed=false; // defused — carry on
+          } else {
+            // Derailed — this player's attempt fails and next player gets debuffed
+            attemptedBy.push({name:firstName,got:false,derailed:true});
+            continue;
+          }
+        }
+
+        // High social: can boost the next player if this one misses
+        const socialBoost=(ps.currentSocial>=70&&next&&!answered)?Math.round((ps.currentSocial-70)*0.3):0;
+
+        // Scale stat to individual hit chance — raw stat as % is far too generous with 5 attempts
+        const hitChance=Math.round(playerStat*0.42)+(isSpecialist?12:0);
+        const correct=rnd(0,100)<hitChance;
+
+        if(correct){
+          answered=true;
+          if(isSpecialist) specialistGotIt=true;
+          roundCorrects[p.name]=(roundCorrects[p.name]||0)+1;
+          attemptedBy.push({name:firstName,got:true,statVal:playerStat,socialBoost,highSocial:ps.currentSocial>=70});
+          break;
+        } else {
+          roundIncorrects[p.name]=(roundIncorrects[p.name]||0)+1;
+          attemptedBy.push({name:firstName,got:false,statVal:playerStat,socialBoost,highSocial:ps.currentSocial>=70});
+          // Apply boost to next player's stat (handled at top of next iteration via bump)
+          if(socialBoost>0&&next){
+            const nextIdx=order.indexOf(next);
+            if(nextIdx>-1){
+              const domS=roundObj.stats?roundObj.stats.reduce((a,b)=>roundObj.weights[a]>=roundObj.weights[b]?a:b):null;
+              if(domS) order[nextIdx]={...next,stats:{...next.stats,[domS]:(next.stats[domS]||0)+socialBoost}};
+            }
+          }
+        }
+      }
+
+      let lineClass,commentary;
+      const misses=attemptedBy.filter(a=>!a.got).length;
+      const winner=attemptedBy.find(a=>a.got);
+      const derailAttempt=attemptedBy.find(a=>a.derailed);
+
+      if(answered&&specialistGotIt){
+        lineClass='tick-special';
+        commentary=`Q${q+1}: ${winner.name} — SPECIALIST. ${pickFresh(COMMENTARY_IMMEDIATE,'imm').replaceAll('{name}',winner.name)}`;
+        roundScore++;
+      } else if(answered&&misses===0){
+        lineClass='tick-good';
+        commentary=`Q${q+1}: ${pickFresh(COMMENTARY_IMMEDIATE,'imm').replaceAll('{name}',winner.name)}`;
+        roundScore++;
+      } else if(answered&&defusedBy){
+        lineClass='tick-good';
+        const c1=pickFresh(COMMENTARY_REDIRECT,'redirect').replaceAll('{peacemaker}',defusedBy.name.split(' ')[0]).replaceAll('{chaos}',derailPlayer.name.split(' ')[0]);
+        const c2=pickFresh(COMMENTARY_SAVE,'save').replaceAll('{name}',winner.name);
+        commentary=`Q${q+1}: ${c1} ${c2}`;
+        roundScore++;
+      } else if(answered&&misses===1){
+        const passer=attemptedBy[0];
+        lineClass='tick-good';
+        if(passer.highSocial){
+          commentary=`Q${q+1}: ${pickFresh(COMMENTARY_HIGHSOCIAL,'hisoc').replace('{name}',passer.name).replaceAll('{next}',winner.name)}`;
+        } else {
+          commentary=`Q${q+1}: ${pickFresh(COMMENTARY_PASS,'pass').replaceAll('{cur}',passer.name).replaceAll('{next}',winner.name)} ${pickFresh(COMMENTARY_SAVE,'save').replaceAll('{name}',winner.name)}`;
+        }
+        roundScore++;
+      } else if(answered&&misses>1){
+        lineClass='tick-good';
+        const passers=attemptedBy.filter(a=>!a.got).map(a=>a.name);
+        commentary=`Q${q+1}: ${passers.join(', ')} — nothing. ${pickFresh(COMMENTARY_SAVE,'save').replaceAll('{name}',winner.name)}`;
+        roundScore++;
+      } else if(!answered&&derailAttempt&&!defusedBy){
+        lineClass='tick-bad';
+        commentary=`Q${q+1}: ${pickFresh(COMMENTARY_DERAIL,'derail').replaceAll('{name}',derailAttempt.name)}`;
+      } else {
+        lineClass='tick-bad';
+        commentary=`Q${q+1}: ${pickFresh(COMMENTARY_DROP,'drop')}`;
+      }
+
+      // ~30% chance to show the relevant stat emoji and influence arrow
+      if(rnd(0,99)<30){
+        const keyPlayer=winner||(attemptedBy.length?attemptedBy[attemptedBy.length-1]:null);
+        if(keyPlayer&&keyPlayer.statVal!==undefined){
+          const domStat=!isSpecial&&roundObj.stats?roundObj.stats.reduce((a,b)=>roundObj.weights[a]>=roundObj.weights[b]?a:b):null;
+          const emoji=isSpecial?'🎲':(domStat?STAT_EMOJI[domStat]:'');
+          if(emoji){
+            const sv=keyPlayer.statVal;
+            const arrow=sv>=70?'<span style="color:#6fcf6f">↑</span>':
+                        sv<=35?'<span style="color:#cf6f6f">↓</span>':
+                        '<span style="color:var(--cream)">≈</span>';
+            commentary+=` <span style="opacity:0.55;font-size:10px">(${emoji}${arrow})</span>`;
+          }
+        }
+      }
+
+      roundLines.push({lineClass,commentary,q});
+    }
+
+    teamScore+=roundScore*perRound;
+
+      if(isSpecial){
+        const specialist=picks.find(p=>p.stats.specialist===roundObj.name);
+        if(specialist){
+          await addLine(`<span class="tick-special">${pick(SPECIAL_INTRO_GOOD).replace('{name}',specialist.name.split(' ')[0])}</span>`,800);
+        } else {
+          await addLine(`<span class="tick-bad">${pick(SPECIAL_INTRO_BAD)}</span>`,800);
+        }
+      }
+
+      let streak=0;
+      for(let li=0;li<roundLines.length;li++){
+        const l=roundLines[li];
+        const good=l.lineClass==='tick-good'||l.lineClass==='tick-special';
+        if(good) streak=streak>=0?streak+1:1;
+        else streak=streak<=0?streak-1:-1;
+
+        await addLine(`<span class="${l.lineClass}">${l.commentary}</span>`,900);
+
+        if((li===2||li===5||li===8)&&Math.abs(streak)>=2){
+          const momLine=streak>=2?pickFresh(MOMENTUM_GOOD,'momgood'):pickFresh(MOMENTUM_BAD,'mombad');
+          await addLine(`<span class="tick-neutral" style="font-style:italic;opacity:0.7">${momLine}</span>`,700);
+        }
+        if(good&&streak===1&&li>2){
+          await addLine(`<span class="tick-neutral" style="font-style:italic;opacity:0.7">${pickFresh(MOMENTUM_RECOVERY,'momrec')}</span>`,700);
+        }
+      }
+
+      const roundSummary=`Round score: ${roundScore}/10`;
+      await addLine(`<span class="round-label" style="color:${roundScore>=7?'#6fcf6f':roundScore>=4?'var(--amber-light)':'#cf6f6f'}">${roundSummary}</span>`,900);
+      updateStickyBoard(rivals,teamScore,teamName);
+
+      // --- End of round: update currentSocial via resilience/cockiness, show drink/mood lines ---
+      const moodLines=[];
+      picks.forEach(p=>{
+        const ps=playerState[p.name];
+        const fn=p.name.split(' ')[0];
+        const corrects=roundCorrects[p.name]||0;
+        const incorrects=roundIncorrects[p.name]||0;
+
+        // Cockiness: correct answers push social up (good in moderation, bad if already high)
+        const cockinessRise=Math.round(corrects*(p.stats.cockiness/20));
+        // Resilience: incorrect answers drag social down proportional to low resilience
+        const resilienceDrop=Math.round(incorrects*((100-p.stats.resilience)/15));
+
+        const prevSocial=ps.currentSocial;
+        ps.currentSocial=Math.max(5,Math.min(100,ps.currentSocial+cockinessRise-resilienceDrop));
+        ps.correctsTotal+=corrects;
+        ps.incorrectsTotal+=incorrects;
+
+        // Commentary on notable social swings
+        const swing=ps.currentSocial-prevSocial;
+        if(swing>=8&&ps.currentSocial>=75&&rnd(0,1)===0){
+          moodLines.push({cls:'tick-neutral',text:pick(COCKINESS_UP).replaceAll('{name}',fn)});
+        } else if(swing<=-8&&ps.currentSocial<=35&&rnd(0,1)===0){
+          moodLines.push({cls:'tick-bad',text:pick(RESILIENCE_DOWN).replaceAll('{name}',fn)});
+        }
+      });
+
+      // Show drink lines first, then mood lines (max 2 total to avoid noise)
+      const atmosphereLines=[...drinkLines,...moodLines].slice(0,2);
+      for(const l of atmosphereLines){
+        await addLine(`<span class="${l.cls}" style="font-style:italic;opacity:0.8">${l.text}</span>`,700);
+      }
+
+      // --- End of round player status report ---
+      const statusLines=picks.map(p=>{
+        const ps=playerState[p.name];
+        const fn=p.name.split(' ')[0];
+
+        // Drunk status
+        const drunkStr=ps.drunkLevel<=1?'Sober':
+                       ps.drunkLevel<=3?'🍺 Tipsy':
+                       ps.drunkLevel<=5?'🍺🍺 Merry':
+                       ps.drunkLevel<=7?'🍺🍺🍺 Drunk':
+                       '🍺🍺🍺🍺 Hammered';
+
+        // Emotional status from currentSocial
+        const soc=ps.currentSocial;
+        const moodStr=soc>=85?'Buzzing 🔥':
+                      soc>=70?'Confident':
+                      soc>=50?'Steady':
+                      soc>=35?'Quiet':
+                      soc>=20?'Rattled 😬':
+                      'In pieces 💀';
+
+        const col=soc>=70?'var(--amber-light)':soc>=40?'var(--cream)':'#cf6f6f';
+        return `<div class="status-row"><span class="status-name">${fn}</span><span class="status-mood" style="color:${col}">${moodStr}</span><span class="status-drunk">${drunkStr}</span></div>`;
+      }).join('');
+
+      await addLine(`<div class="status-panel"><div class="status-title">END OF ROUND STATUS</div>${statusLines}</div>`,600);
+
+      const isLast=ri===rounds.length-1;
+      const nextLabel=isLast?'See Final Results':`Continue to Round ${ri+2}${ri+1===5?' (Specialist)':''}`;
+      await waitForClick(nextLabel);
+    }
+
+    // Final result
+    {
+    const allFinal=[{name:teamName,score:teamScore,yours:true},...rivals.map(r=>({name:r.name,score:r.score,yours:false}))];
+    allFinal.sort((a,b)=>b.score-a.score);
+    const pos=allFinal.findIndex(t=>t.yours)+1;
+    const total=allFinal.length;
+    updateStickyBoard(rivals,teamScore,teamName);
+
+    let verdict;
+    if(pos===1&&teamScore-allFinal[1].score>80)verdict='CHAMPIONS!';
+    else if(pos===1)verdict='WINNERS!';
+    else if(pos===2)verdict='RUNNERS UP';
+    else if(pos===total)verdict='LAST PLACE';
+    else verdict=`${pos}${pos===3?'RD':'TH'} PLACE`;
+
+    const verdictColor=pos===1?'#6fcf6f':pos<=2?'#e8a020':'#cf6f6f';
+
+    const finalHTML=`<div class="final-card">
+      <div class="final-verdict" style="color:${verdictColor}">${verdict}</div>
+      <div class="final-pos" style="margin-bottom:12px">Final standings — ${pub.quiz}</div>
+      ${allFinal.map((t,i)=>{
+        const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+        const style=t.yours?'color:var(--amber-light);font-weight:bold':'';
+        return`<div class="lb-row" style="${style}">
+          <span class="lb-pos">${medal}</span>
+          <span class="lb-name">${t.name}</span>
+          <span class="lb-score">${t.score}</span>
+        </div>`;
+      }).join('')}
+      <div class="epilogue">${genEpilogue(picks,playerState,pos,teamName,pub.name,teamScore)}</div>
+      <button class="replay-btn" onclick="location.reload()">PLAY AGAIN</button>
+    </div>`;
+
+    ticker.insertAdjacentHTML('beforeend',finalHTML);
+    setTimeout(()=>ticker.lastElementChild.scrollIntoView({behavior:'smooth'}),100);
+    }
+  }
+  playRounds();
+}
+
+function checkReady(){
+  const named=document.getElementById('team-name').value.trim().length>0;
+  const drafted=picks.filter(Boolean).length===5;
+  document.getElementById('go-btn').classList.toggle('ready',named&&drafted);
+}
+document.getElementById('team-name').addEventListener('input',checkReady);
+document.getElementById('go-btn').onclick=startMatch;
+renderPubBoard();
+renderTeamSlots();
+renderPickSlot(0);
+</script>
+</body>
+</html>
