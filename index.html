@@ -552,6 +552,7 @@ function distributeStats(total,n,min,max){
 }
 
 const usedNames=new Set();
+let _playerIdCounter=0;
 function genPlayer(){
   let fn,ln;
   let attempts=0;
@@ -575,7 +576,7 @@ function genPlayer(){
   stats.drinking=rnd(1,10);       // how much they drink over the night
   stats.resilience=rnd(10,100);   // resistance to social drop after wrong answers
   stats.cockiness=rnd(10,100);    // social inflation after correct answers
-  return{name:`${fn} ${ln}`,archetype:genArchetype(stats),stats};
+  return{id:++_playerIdCounter,name:`${fn} ${ln}`,archetype:genArchetype(stats),stats};
 }
 
 function statColor(v){return v>=75?'high':v>=50?'mid':'low'}
@@ -824,20 +825,14 @@ const RESILIENCE_DOWN=[
 ];
 
 function genEpilogue(picks,playerState,pos,teamName,pubName,teamScore){
-  const totalPlayers=picks.length;
-
   // Find notable players
-  const mostDrunk=picks.reduce((a,b)=>playerState[a.name].drunkLevel>=playerState[b.name].drunkLevel?a:b);
-  const mostDrunkPs=playerState[mostDrunk.name];
-  const leastDrunk=picks.reduce((a,b)=>playerState[a.name].drunkLevel<=playerState[b.name].drunkLevel?a:b);
-  const mostConfident=picks.reduce((a,b)=>playerState[a.name].currentSocial>=playerState[b.name].currentSocial?a:b);
-  const mostDeflated=picks.reduce((a,b)=>playerState[a.name].currentSocial<=playerState[b.name].currentSocial?a:b);
-  const mostDeflatedPs=playerState[mostDeflated.name];
+  const mostDrunk=picks.reduce((a,b)=>playerState[a.id].drunkLevel>=playerState[b.id].drunkLevel?a:b);
+  const mostConfident=picks.reduce((a,b)=>playerState[a.id].currentSocial>=playerState[b.id].currentSocial?a:b);
+  const mostDeflated=picks.reduce((a,b)=>playerState[a.id].currentSocial<=playerState[b.id].currentSocial?a:b);
 
   const mnFn=mostDrunk.name.split(' ')[0];
   const cfFn=mostConfident.name.split(' ')[0];
   const dfFn=mostDeflated.name.split(' ')[0];
-  const ldFn=leastDrunk.name.split(' ')[0];
 
   const ENDINGS_WIN=[
     `${cfFn} led the celebrations loudly. ${mnFn} needed help finding their coat. The night ended at somebody else's pub.`,
@@ -872,11 +867,11 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      if(r<15) return{outcome:'backfire',text:"The speech started well. Then it kept going. The team glazed over. Social across the board takes a hit.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-12);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-12);})};
      if(r>=90) return{outcome:'wild',text:"Absolute scenes. Goosebumps. Everyone is locked in and buzzing.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);CORE_STATS.forEach(s=>{p.stats[s]=Math.min(90,p.stats[s]+8);});})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+20);CORE_STATS.forEach(s=>{p.stats[s]=Math.min(90,p.stats[s]+8);});})};
      return{outcome:'good',text:"Good energy in the group. Everyone heads into the next round feeling positive.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+10);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+10);})};
    }},
   {id:'strategy',name:'Quiz Strategy Session',  type:'team',       desc:'Get everyone on the same page. Coordinate who answers what. Could cause paralysis by analysis.',
    apply:(picks,ps,nom)=>{
@@ -892,21 +887,21 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      if(r<15) return{outcome:'backfire',text:"Someone got into a conversation at the bar. They come back five minutes late and completely distracted.",
-       fn:(picks,ps)=>{const p=pick(picks);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-15);ps[p.name].drunkLevel+=2;}};
+       fn:(picks,ps)=>{const p=pick(picks);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-15);ps[p.id].drunkLevel+=2;}};
      if(r>=90) return{outcome:'wild',text:"The fresh air works miracles. Everyone sobers up and refocuses.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-3);ps[p.name].drunkMod=Math.min(5,ps[p.name].drunkMod+5);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-3);ps[p.id].drunkMod=Math.min(5,ps[p.id].drunkMod+5);})};
      return{outcome:'good',text:"Everyone returns a bit clearer. Drunk levels nudge down.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-1);})};
    }},
   {id:'huddle',  name:'Huddle Up',              type:'team',       desc:'Get tight as a unit. Reduces friction for the next round — unless it causes an argument.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      if(r<15) return{outcome:'backfire',text:"Someone said something. Nobody knows what. Now everyone is tense.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-8);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-8);})};
      if(r>=90) return{outcome:'wild',text:"The team feels unbeatable. Major morale surge across the board.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+18);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+18);})};
      return{outcome:'good',text:"Good unity. The low-social drag on the team is reduced for the next round.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+6);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+6);})};
    }},
   {id:'reshuffle',name:'Swap Seats',            type:'team',       desc:'Change up the seating. Fresh perspectives — or complete chaos.',
    apply:(picks,ps,nom)=>{
@@ -937,9 +932,9 @@ const COACH_EVENTS=[
      const results=[];
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
-       if(r<15){results.push(`${fn}: orders another out of spite.`);ps[p.name].drunkLevel+=2;}
-       else if(r>=90){results.push(`${fn}: practically sober suddenly.`);ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-4);}
-       else{results.push(`${fn}: nurses the current one.`);ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);}
+       if(r<15){results.push(`${fn}: orders another out of spite.`);ps[p.id].drunkLevel+=2;}
+       else if(r>=90){results.push(`${fn}: practically sober suddenly.`);ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-4);}
+       else{results.push(`${fn}: nurses the current one.`);ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-1);}
      });
      return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
    }},
@@ -948,9 +943,9 @@ const COACH_EVENTS=[
      const results=[];
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
-       if(r<15){results.push(`${fn}: takes it badly.`);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-10);}
-       else if(r>=90){results.push(`${fn}: transformed. Full confidence.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);}
-       else{results.push(`${fn}: appreciated it.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+8);}
+       if(r<15){results.push(`${fn}: takes it badly.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-10);}
+       else if(r>=90){results.push(`${fn}: transformed. Full confidence.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+20);}
+       else{results.push(`${fn}: appreciated it.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+8);}
      });
      return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
    }},
@@ -960,9 +955,9 @@ const COACH_EVENTS=[
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
        const resilBonus=Math.round(p.stats.resilience/20);
-       if(r<15){results.push(`${fn}: can't let it go.`);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-8);}
-       else if(r>=90){results.push(`${fn}: completely reset.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+15+resilBonus);}
-       else{results.push(`${fn}: mostly fine.`);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+4+resilBonus);}
+       if(r<15){results.push(`${fn}: can't let it go.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-8);}
+       else if(r>=90){results.push(`${fn}: completely reset.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+15+resilBonus);}
+       else{results.push(`${fn}: mostly fine.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+4+resilBonus);}
      });
      return{outcome:'mixed',text:results.join(' '),fn:()=>{}};
    }},
@@ -983,41 +978,41 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
      if(r<15) return{outcome:'backfire',text:`${fn} immediately makes two bad calls. The team lose faith fast.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-20);}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-20);}};
      if(r>=90) return{outcome:'wild',text:`${fn} is absolutely born for this. Stat surge and the team rally behind them.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+30);CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+12);});}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+30);CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+12);});}};
      return{outcome:'good',text:`${fn} steps up. Confident and focused going into the next round.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+18);}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+18);}};
    }},
   {id:'quietword',name:'Quiet Word',            type:'targeted',   desc:'Take a troublesome player aside. Could calm them right down — or make things worse.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
      if(r<15) return{outcome:'backfire',text:`${fn} does not take it well. Storms back to the table.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-18);}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-18);}};
      if(r>=90) return{outcome:'wild',text:`${fn} nods slowly. Something clicks. Complete transformation.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+25);}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+25);}};
      return{outcome:'good',text:`${fn} takes it on board. Noticeably calmer.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.min(100,ps[nom.name].currentSocial+15);}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+15);}};
    }},
   {id:'sitdown', name:'Sit Them Down',          type:'targeted',   desc:'Firmly bench a disruptive player for one question. They comply — but may resent it.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
      if(r<15) return{outcome:'backfire',text:`${fn} refuses. Now they're louder than before.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(5,ps[nom.name].currentSocial-20);ps[nom.name].drunkLevel+=1;}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-20);ps[nom.id].drunkLevel+=1;}};
      if(r>=90) return{outcome:'wild',text:`${fn} actually needed this. Comes back sharper and quieter.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(20,Math.min(65,ps[nom.name].currentSocial));CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+8);});}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(20,Math.min(65,ps[nom.id].currentSocial));CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+8);});}};
      return{outcome:'good',text:`${fn} sulks briefly then settles. Social dampened but disruption reduced.`,
-       fn:(picks,ps)=>{ps[nom.name].currentSocial=Math.max(15,Math.min(55,ps[nom.name].currentSocial));}};
+       fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(15,Math.min(55,ps[nom.id].currentSocial));}};
    }},
   {id:'dd',      name:'Designated Driver',      type:'targeted',   desc:'One player goes on soft drinks. No more drunk degradation — and a focus bonus.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
      if(r<15) return{outcome:'backfire',text:`${fn} agrees, then immediately orders a pint out of habit.`,
-       fn:(picks,ps)=>{ps[nom.name].drunkLevel+=2;}};
+       fn:(picks,ps)=>{ps[nom.id].drunkLevel+=2;}};
      if(r>=90) return{outcome:'wild',text:`${fn} is suddenly the sharpest person at the table. Massive stat boost.`,
-       fn:(picks,ps)=>{ps[nom.name].drunkLevel=0;ps[nom.name].drunkMod=8;CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+10);});}};
+       fn:(picks,ps)=>{ps[nom.id].drunkLevel=0;ps[nom.id].drunkMod=8;CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+10);});}};
      return{outcome:'good',text:`${fn} switches to water. Drunk level frozen and focus improves.`,
-       fn:(picks,ps)=>{ps[nom.name].drunkLevel=Math.max(0,ps[nom.name].drunkLevel-2);ps[nom.name].drunkMod=Math.min(5,ps[nom.name].drunkMod+5);}};
+       fn:(picks,ps)=>{ps[nom.id].drunkLevel=Math.max(0,ps[nom.id].drunkLevel-2);ps[nom.id].drunkMod=Math.min(5,ps[nom.id].drunkMod+5);}};
    }},
   {id:'spotlight',name:'Spotlight',             type:'targeted',   desc:"Put one player on point for the specialist round. Huge upside — or complete stage fright.",
    apply:(picks,ps,nom)=>{
@@ -1035,11 +1030,11 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      if(r<15) return{outcome:'backfire',text:"The bar takes ten minutes. The team loses focus waiting. Drunk levels rise anyway.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=2;ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-5);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel+=2;ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-5);})};
      if(r>=90) return{outcome:'wild',text:"Perfect timing. The drinks arrive exactly right. Everyone is delighted. Social surge.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=1;ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+15);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel+=1;ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+15);})};
      return{outcome:'good',text:"Drinks flow. Everyone's a bit happier — and a bit more drunk.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel+=1;ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+8);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel+=1;ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+8);})};
    }},
   {id:'fruitmachine',name:'Play the Fruit Machine',type:'pub',     desc:"Throw some coins in. Completely random outcome. Could be anything.",
    apply:(picks,ps,nom)=>{
@@ -1047,11 +1042,11 @@ const COACH_EVENTS=[
      const p=pick(picks); const fn=p.name.split(' ')[0];
      const s=pick(CORE_STATS);
      if(r<15) return{outcome:'backfire',text:`${fn} loses a fiver and comes back furious. ${STAT_EMOJI[s]} drops.`,
-       fn:(picks,ps)=>{p.stats[s]=Math.max(5,p.stats[s]-15);ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-12);}};
+       fn:(picks,ps)=>{p.stats[s]=Math.max(5,p.stats[s]-15);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-12);}};
      if(r>=90) return{outcome:'wild',text:`Jackpot. ${fn} wins big. The entire team is on cloud nine.`,
-       fn:(picks,ps)=>picks.forEach(q=>{ps[q.name].currentSocial=Math.min(100,ps[q.name].currentSocial+20);})};
+       fn:(picks,ps)=>picks.forEach(q=>{ps[q.id].currentSocial=Math.min(100,ps[q.id].currentSocial+20);})};
      return{outcome:'good',text:`${fn} breaks even and returns happy enough. Minor morale boost.`,
-       fn:(picks,ps)=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+6);}};
+       fn:(picks,ps)=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+6);}};
    }},
   {id:'rivals',  name:'Chat to a Rival Team',   type:'pub',        desc:"Make friends with the competition. Steal intel — or get completely psyched out.",
    apply:(picks,ps,nom)=>{
@@ -1068,22 +1063,22 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      if(r<15) return{outcome:'backfire',text:"Kitchen closed. Someone suggested coming to a pub with no food. Everyone is annoyed. Social drops.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-10);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-10);})};
      if(r>=90) return{outcome:'wild',text:"Perfect timing. Food arrives fast, it's great, everyone sobers up and refocuses completely.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-3);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+12);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-3);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+12);})};
      return{outcome:'good',text:"Food helps. Drunk levels nudge down across the board and the team settles.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].drunkLevel=Math.max(0,ps[p.name].drunkLevel-1);ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+5);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-1);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+5);})};
    }},
   {id:'challenge',name:"Challenge the Landlord", type:'pub',        desc:"Dispute a quizmaster ruling. Win the argument and morale soars. Lose it and the table looks ridiculous.",
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      const s=pick(CORE_STATS);
      if(r<15) return{outcome:'backfire',text:"They were right. The team were wrong, loud about it, and now everyone in the pub knows it. Social craters.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.max(5,ps[p.name].currentSocial-18);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-18);})};
      if(r>=90) return{outcome:'wild',text:"Correct challenge. The quizmaster concedes. The table erupts. Massive morale surge and a stat boost from the confidence.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+20);p.stats[s]=Math.min(90,p.stats[s]+8);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+20);p.stats[s]=Math.min(90,p.stats[s]+8);})};
      return{outcome:'good',text:"Marginal call, but they got the ruling overturned. The team feels vindicated. Morale up.",
-       fn:(picks,ps)=>picks.forEach(p=>{ps[p.name].currentSocial=Math.min(100,ps[p.name].currentSocial+10);})};
+       fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+10);})};
    }},];
 
 function pickThreeEvents(){
@@ -1114,6 +1109,8 @@ function showCoachingPanel(picks,playerState,ticker){
         card.style.opacity='1';card.style.border='1px solid var(--amber)';
 
         if(ev.type==='targeted'){
+          // Re-enable pointer events on this card so nomination buttons are clickable
+          card.style.pointerEvents='auto';
           // Show nomination panel
           const nomDiv=document.createElement('div');
           nomDiv.innerHTML='<div style="font-size:10px;color:var(--amber);margin:8px 0 4px;font-family:Oswald,sans-serif;letter-spacing:1px">NOMINATE A PLAYER:</div>';
@@ -1167,7 +1164,7 @@ function startMatch(){
   // Per-player mutable state — updated each round
   const playerState={};
   picks.forEach(p=>{
-    playerState[p.name]={
+    playerState[p.id]={
       drunkLevel:0,          // accumulates over rounds
       currentSocial:p.stats.social,  // drifts with resilience/cockiness
       correctsTotal:0,
@@ -1269,7 +1266,7 @@ function startMatch(){
     // Each player accumulates drunk level based on their drinking stat
     const drinkLines=[];
     picks.forEach(p=>{
-      const ps=playerState[p.name];
+      const ps=playerState[p.id];
       // Drink between 0 and drinking/3 units this round
       const unitsThisRound=Math.random()<(p.stats.drinking/10)?rnd(1,Math.ceil(p.stats.drinking/3)):0;
       ps.drunkLevel+=unitsThisRound;
@@ -1292,10 +1289,10 @@ function startMatch(){
     });
 
     // --- Dynamic social: use currentSocial (updated by resilience/cockiness) ---
-    const highSocial=picks.filter(p=>playerState[p.name].currentSocial>=70);
-    const lowSocial=picks.filter(p=>playerState[p.name].currentSocial<40);
-    const rawSocialPenalty=lowSocial.reduce((s,p)=>s+(40-playerState[p.name].currentSocial),0);
-    const socialMitigation=Math.min(rawSocialPenalty,highSocial.reduce((s,p)=>s+(playerState[p.name].currentSocial-70)*0.4,0));
+    const highSocial=picks.filter(p=>playerState[p.id].currentSocial>=70);
+    const lowSocial=picks.filter(p=>playerState[p.id].currentSocial<40);
+    const rawSocialPenalty=lowSocial.reduce((s,p)=>s+(40-playerState[p.id].currentSocial),0);
+    const socialMitigation=Math.min(rawSocialPenalty,highSocial.reduce((s,p)=>s+(playerState[p.id].currentSocial-70)*0.4,0));
     const netSocialPenalty=Math.max(0,rawSocialPenalty-socialMitigation);
     const socialDebuff=Math.round(netSocialPenalty/5);
 
@@ -1324,7 +1321,7 @@ function startMatch(){
         const next=order[pi+1];
         const firstName=p.name.split(' ')[0];
         const isSpecialist=isSpecial&&p.stats.specialist===roundObj.name;
-        const ps=playerState[p.name];
+        const ps=playerState[p.id];
         let playerStat=isSpecial
           ?(isSpecialist?p.stats.specialistVal:rnd(15,45))
           :blendStat(p.stats,roundObj.weights);
@@ -1337,8 +1334,8 @@ function startMatch(){
           derailed=true;
           derailPlayer=p;
           // Check if a high-social player can defuse it
-          const defuser=picks.find(d=>d!==p&&playerState[d.name].currentSocial>=70);
-          if(defuser&&rnd(0,100)<playerState[defuser.name].currentSocial-50){
+          const defuser=picks.find(d=>d!==p&&playerState[d.id].currentSocial>=70);
+          if(defuser&&rnd(0,100)<playerState[defuser.id].currentSocial-50){
             defusedBy=defuser;
             derailed=false; // defused — carry on
           } else {
@@ -1471,7 +1468,7 @@ function startMatch(){
       // --- End of round: update currentSocial via resilience/cockiness, show drink/mood lines ---
       const moodLines=[];
       picks.forEach(p=>{
-        const ps=playerState[p.name];
+        const ps=playerState[p.id];
         const fn=p.name.split(' ')[0];
         const corrects=roundCorrects[p.name]||0;
         const incorrects=roundIncorrects[p.name]||0;
@@ -1503,7 +1500,7 @@ function startMatch(){
 
       // --- End of round player status report ---
       const statusLines=picks.map(p=>{
-        const ps=playerState[p.name];
+        const ps=playerState[p.id];
         const fn=p.name.split(' ')[0];
 
         // Drunk status
