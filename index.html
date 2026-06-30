@@ -127,6 +127,14 @@
   .result-good{background:#1a3a1a;border:1px solid #6fcf6f;color:#6fcf6f}
   .result-bad{background:#3a1a1a;border:1px solid #cf6f6f;color:#cf6f6f}
   .result-wild{background:#1a1a3a;border:1px solid var(--amber-light);color:var(--amber-light)}
+  .pen-panel{margin:10px 0;background:var(--pub-mid);border:1px solid var(--amber);border-radius:8px;padding:10px 12px}
+  .pen-title{font-family:'Oswald',sans-serif;font-size:11px;color:var(--amber);letter-spacing:1px;margin-bottom:8px}
+  .pen-choices{display:flex;gap:8px}
+  .pen-choice{flex:1;background:var(--pub-card);border:1px solid var(--border);border-radius:6px;padding:10px 8px;cursor:pointer;text-align:center;transition:border-color 0.15s}
+  .pen-choice:hover{border-color:var(--amber)}
+  .pen-choice-name{font-family:'Oswald',sans-serif;font-size:13px;color:var(--cream);margin-bottom:4px}
+  .pen-choice-tell{font-size:10px;color:var(--muted);line-height:1.3;font-style:italic}
+  .pen-result{margin-top:8px;padding:8px 10px;border-radius:6px;font-size:12px;line-height:1.5}
   .epilogue{font-size:12px;color:var(--muted);font-style:italic;line-height:1.6;margin:12px 0;padding:10px 0;border-top:1px solid var(--border)}
   .replay-btn{display:block;width:100%;margin-top:16px;padding:12px;background:transparent;color:var(--amber);border:2px solid var(--amber);font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;border-radius:6px;cursor:pointer}
   #sticky-board{padding:0 4px}
@@ -921,7 +929,7 @@ const COACH_EVENTS=[
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
        const hi=CORE_STATS.reduce((a,b)=>p.stats[a]>=p.stats[b]?a:b);
-       if(r<15){results.push(`${fn}: overcorrects, actually worse.`);p.stats[hi]=Math.max(5,p.stats[hi]-8);}
+       if(r<30){results.push(`${fn}: overcorrects, actually worse.`);p.stats[hi]=Math.max(5,p.stats[hi]-8);}
        else if(r>=90){results.push(`${fn}: locked in. ${STAT_EMOJI[hi]} surges.`);p.stats[hi]=Math.min(90,p.stats[hi]+15);}
        else{results.push(`${fn}: solid. Small ${STAT_EMOJI[hi]} boost.`);p.stats[hi]=Math.min(90,p.stats[hi]+6);}
      });
@@ -932,7 +940,7 @@ const COACH_EVENTS=[
      const results=[];
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
-       if(r<15){results.push(`${fn}: orders another out of spite.`);ps[p.id].drunkLevel+=2;}
+       if(r<30){results.push(`${fn}: orders another out of spite.`);ps[p.id].drunkLevel+=2;}
        else if(r>=90){results.push(`${fn}: practically sober suddenly.`);ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-4);}
        else{results.push(`${fn}: nurses the current one.`);ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-1);}
      });
@@ -943,7 +951,7 @@ const COACH_EVENTS=[
      const results=[];
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
-       if(r<15){results.push(`${fn}: takes it badly.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-10);}
+       if(r<30){results.push(`${fn}: takes it badly.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-10);}
        else if(r>=90){results.push(`${fn}: transformed. Full confidence.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+20);}
        else{results.push(`${fn}: appreciated it.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+8);}
      });
@@ -955,7 +963,7 @@ const COACH_EVENTS=[
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
        const resilBonus=Math.round(p.stats.resilience/20);
-       if(r<15){results.push(`${fn}: can't let it go.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-8);}
+       if(r<30){results.push(`${fn}: can't let it go.`);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-8);}
        else if(r>=90){results.push(`${fn}: completely reset.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+15+resilBonus);}
        else{results.push(`${fn}: mostly fine.`);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+4+resilBonus);}
      });
@@ -966,7 +974,7 @@ const COACH_EVENTS=[
      const results=[];
      picks.forEach(p=>{
        const r=rnd(0,99); const fn=p.name.split(' ')[0];
-       if(r<15){results.push(`${fn}: spirals. Specialist stat drops.`);p.stats.specialistVal=Math.max(5,p.stats.specialistVal-12);}
+       if(r<30){results.push(`${fn}: spirals. Specialist stat drops.`);p.stats.specialistVal=Math.max(5,p.stats.specialistVal-12);}
        else if(r>=90){results.push(`${fn}: unstoppable in their niche.`);p.stats.specialistVal=Math.min(99,p.stats.specialistVal+20);}
        else{results.push(`${fn}: sharper.`);p.stats.specialistVal=Math.min(99,p.stats.specialistVal+8);}
      });
@@ -977,7 +985,7 @@ const COACH_EVENTS=[
   {id:'incharge',name:'Put Them In Charge',     type:'targeted',   desc:'Nominate one player to lead. Big confidence surge — but cockiness may spiral.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
-     if(r<15) return{outcome:'backfire',text:`${fn} immediately makes two bad calls. The team lose faith fast.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} immediately makes two bad calls. The team lose faith fast.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-20);}};
      if(r>=90) return{outcome:'wild',text:`${fn} is absolutely born for this. Stat surge and the team rally behind them.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+30);CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+12);});}};
@@ -987,7 +995,7 @@ const COACH_EVENTS=[
   {id:'quietword',name:'Quiet Word',            type:'targeted',   desc:'Take a troublesome player aside. Could calm them right down — or make things worse.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
-     if(r<15) return{outcome:'backfire',text:`${fn} does not take it well. Storms back to the table.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} does not take it well. Storms back to the table.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-18);}};
      if(r>=90) return{outcome:'wild',text:`${fn} nods slowly. Something clicks. Complete transformation.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.min(100,ps[nom.id].currentSocial+25);}};
@@ -997,7 +1005,7 @@ const COACH_EVENTS=[
   {id:'sitdown', name:'Sit Them Down',          type:'targeted',   desc:'Firmly bench a disruptive player for one question. They comply — but may resent it.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
-     if(r<15) return{outcome:'backfire',text:`${fn} refuses. Now they're louder than before.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} refuses. Now they're louder than before.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(5,ps[nom.id].currentSocial-20);ps[nom.id].drunkLevel+=1;}};
      if(r>=90) return{outcome:'wild',text:`${fn} actually needed this. Comes back sharper and quieter.`,
        fn:(picks,ps)=>{ps[nom.id].currentSocial=Math.max(20,Math.min(65,ps[nom.id].currentSocial));CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+8);});}};
@@ -1007,7 +1015,7 @@ const COACH_EVENTS=[
   {id:'dd',      name:'Designated Driver',      type:'targeted',   desc:'One player goes on soft drinks. No more drunk degradation — and a focus bonus.',
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
-     if(r<15) return{outcome:'backfire',text:`${fn} agrees, then immediately orders a pint out of habit.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} agrees, then immediately orders a pint out of habit.`,
        fn:(picks,ps)=>{ps[nom.id].drunkLevel+=2;}};
      if(r>=90) return{outcome:'wild',text:`${fn} is suddenly the sharpest person at the table. Massive stat boost.`,
        fn:(picks,ps)=>{ps[nom.id].drunkLevel=0;ps[nom.id].drunkMod=8;CORE_STATS.forEach(s=>{nom.stats[s]=Math.min(90,nom.stats[s]+10);});}};
@@ -1017,7 +1025,7 @@ const COACH_EVENTS=[
   {id:'spotlight',name:'Spotlight',             type:'targeted',   desc:"Put one player on point for the specialist round. Huge upside — or complete stage fright.",
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99); const fn=nom.name.split(' ')[0];
-     if(r<15) return{outcome:'backfire',text:`${fn} freezes under the pressure. Specialist stat craters.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} freezes under the pressure. Specialist stat craters.`,
        fn:(picks,ps)=>{nom.stats.specialistVal=Math.max(5,nom.stats.specialistVal-20);}};
      if(r>=90) return{outcome:'wild',text:`${fn} is in the zone. Maximum specialist knowledge unlocked.`,
        fn:(picks,ps)=>{nom.stats.specialistVal=Math.min(99,nom.stats.specialistVal+25);}};
@@ -1029,7 +1037,7 @@ const COACH_EVENTS=[
   {id:'round',   name:'Get a Round In',         type:'pub',        desc:"Buy everyone a drink. Guaranteed morale boost — and guaranteed drunk increase.",
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
-     if(r<15) return{outcome:'backfire',text:"The bar takes ten minutes. The team loses focus waiting. Drunk levels rise anyway.",
+     if(r<30) return{outcome:'backfire',text:"The bar takes ten minutes. The team loses focus waiting. Drunk levels rise anyway.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel+=2;ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-5);})};
      if(r>=90) return{outcome:'wild',text:"Perfect timing. The drinks arrive exactly right. Everyone is delighted. Social surge.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel+=1;ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+15);})};
@@ -1041,7 +1049,7 @@ const COACH_EVENTS=[
      const r=rnd(0,99);
      const p=pick(picks); const fn=p.name.split(' ')[0];
      const s=pick(CORE_STATS);
-     if(r<15) return{outcome:'backfire',text:`${fn} loses a fiver and comes back furious. ${STAT_EMOJI[s]} drops.`,
+     if(r<30) return{outcome:'backfire',text:`${fn} loses a fiver and comes back furious. ${STAT_EMOJI[s]} drops.`,
        fn:(picks,ps)=>{p.stats[s]=Math.max(5,p.stats[s]-15);ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-12);}};
      if(r>=90) return{outcome:'wild',text:`Jackpot. ${fn} wins big. The entire team is on cloud nine.`,
        fn:(picks,ps)=>picks.forEach(q=>{ps[q.id].currentSocial=Math.min(100,ps[q.id].currentSocial+20);})};
@@ -1052,7 +1060,7 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      const s=pick(CORE_STATS);
-     if(r<15) return{outcome:'backfire',text:`The rival team are alarmingly confident. The team comes back rattled. ${STAT_EMOJI[s]} drops.`,
+     if(r<30) return{outcome:'backfire',text:`The rival team are alarmingly confident. The team comes back rattled. ${STAT_EMOJI[s]} drops.`,
        fn:(picks,ps)=>picks.forEach(p=>{p.stats[s]=Math.max(5,p.stats[s]-10);})};
      if(r>=90) return{outcome:'wild',text:`Gleaned something useful from the other table. Hints at what's coming. ${STAT_EMOJI[s]} surges.`,
        fn:(picks,ps)=>picks.forEach(p=>{p.stats[s]=Math.min(90,p.stats[s]+12);})};
@@ -1062,7 +1070,7 @@ const COACH_EVENTS=[
   {id:'food',    name:"Shall We Order Food?",   type:'pub',        desc:"Get some carbs in. Sobering effect and a potential morale boost — if the kitchen is open.",
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
-     if(r<15) return{outcome:'backfire',text:"Kitchen closed. Someone suggested coming to a pub with no food. Everyone is annoyed. Social drops.",
+     if(r<30) return{outcome:'backfire',text:"Kitchen closed. Someone suggested coming to a pub with no food. Everyone is annoyed. Social drops.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-10);})};
      if(r>=90) return{outcome:'wild',text:"Perfect timing. Food arrives fast, it's great, everyone sobers up and refocuses completely.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].drunkLevel=Math.max(0,ps[p.id].drunkLevel-3);ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+12);})};
@@ -1073,7 +1081,7 @@ const COACH_EVENTS=[
    apply:(picks,ps,nom)=>{
      const r=rnd(0,99);
      const s=pick(CORE_STATS);
-     if(r<15) return{outcome:'backfire',text:"They were right. The team were wrong, loud about it, and now everyone in the pub knows it. Social craters.",
+     if(r<30) return{outcome:'backfire',text:"They were right. The team were wrong, loud about it, and now everyone in the pub knows it. Social craters.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.max(5,ps[p.id].currentSocial-18);})};
      if(r>=90) return{outcome:'wild',text:"Correct challenge. The quizmaster concedes. The table erupts. Massive morale surge and a stat boost from the confidence.",
        fn:(picks,ps)=>picks.forEach(p=>{ps[p.id].currentSocial=Math.min(100,ps[p.id].currentSocial+20);p.stats[s]=Math.min(90,p.stats[s]+8);})};
@@ -1151,6 +1159,113 @@ function showResult(result,panel,resolve){
   panel.appendChild(resDiv);
   resDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
   setTimeout(resolve,1200);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ── THE PEN: mid-round player decision ───────────────────────────────────────
+const TELL_CERTAIN=[
+  "looks completely certain.",
+  "is already reaching for the pen.",
+  "has that look. They know this.",
+  "is nodding slowly. Sure of it.",
+  "doesn't even need to think.",
+  "is dead calm. A good sign.",
+  "is mouthing the answer already.",
+];
+const TELL_CONFIDENT=[
+  "seems fairly sure.",
+  "is leaning in, ready to go.",
+  "has a decent feeling about this.",
+  "thinks they've got it.",
+  "is fairly convinced.",
+];
+const TELL_HESITANT=[
+  "looks unsure but is insisting anyway.",
+  "is hesitating, but wants to try.",
+  "isn't totally convinced but has a guess.",
+  "is wavering, then commits.",
+  "looks doubtful but raises a hand anyway.",
+];
+const TELL_SHAKY=[
+  "looks like they're guessing.",
+  "has the energy of someone about to be wrong.",
+  "is stalling for time.",
+  "looks faintly panicked.",
+  "is overthinking this badly.",
+];
+const TELL_DRUNK_FLAVOUR=[
+  "swaying slightly but adamant.",
+  "is far too confident for how many they've had.",
+  "is squinting at the question like it's moving.",
+  "has decided this is definitely their moment.",
+];
+
+function getTell(player,playerState,roundObj,isSpecial){
+  const ps=playerState[player.id];
+  const isSpecialist=isSpecial&&player.stats.specialist===roundObj.name;
+  const rawStat=isSpecial?(isSpecialist?player.stats.specialistVal:rnd(15,45)):blendStat(player.stats,roundObj.weights);
+  // Noise added so the tell is a hint, not a readout — +/-25 fuzz on a 0-100 scale
+  const perceived=Math.max(0,Math.min(100,rawStat+rnd(-25,25)));
+
+  let pool;
+  if(perceived>=75) pool=TELL_CERTAIN;
+  else if(perceived>=55) pool=TELL_CONFIDENT;
+  else if(perceived>=35) pool=TELL_HESITANT;
+  else pool=TELL_SHAKY;
+
+  // Drunk players occasionally get a flavour override regardless of stat
+  if(ps.drunkLevel>=5&&rnd(0,2)===0) pool=TELL_DRUNK_FLAVOUR;
+
+  return{text:pick(pool),rawStat};
+}
+
+function showThePen(picks,playerState,roundObj,isSpecial,ticker){
+  return new Promise(resolve=>{
+    // Pick two distinct players at random
+    const shuffled=[...picks].sort(()=>Math.random()-0.5);
+    const a=shuffled[0],b=shuffled[1];
+    const tellA=getTell(a,playerState,roundObj,isSpecial);
+    const tellB=getTell(b,playerState,roundObj,isSpecial);
+    const fnA=a.name.split(' ')[0],fnB=b.name.split(' ')[0];
+
+    const panel=document.createElement('div');
+    panel.className='pen-panel';
+    panel.innerHTML=`
+      <div class="pen-title">✏️ WHO GETS THE PEN?</div>
+      <div class="pen-choices">
+        <div class="pen-choice" id="pen-a">
+          <div class="pen-choice-name">${fnA}</div>
+          <div class="pen-choice-tell">${fnA} ${tellA.text}</div>
+        </div>
+        <div class="pen-choice" id="pen-b">
+          <div class="pen-choice-name">${fnB}</div>
+          <div class="pen-choice-tell">${fnB} ${tellB.text}</div>
+        </div>
+      </div>`;
+    ticker.appendChild(panel);
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+    const resolveChoice=(chosen,chosenStat,fn)=>{
+      panel.querySelectorAll('.pen-choice').forEach(c=>{c.style.opacity='0.3';c.style.pointerEvents='none';});
+      const hit=rnd(0,100)<Math.round(chosenStat*0.42)+(isSpecial?6:0);
+      const resDiv=document.createElement('div');
+      resDiv.className='pen-result';
+      if(hit){
+        resDiv.style.background='#1a3a1a';resDiv.style.border='1px solid #6fcf6f';resDiv.style.color='#6fcf6f';
+        resDiv.textContent=`✓ ${fn} got it. Good call.`;
+      } else {
+        resDiv.style.background='#3a1a1a';resDiv.style.border='1px solid #cf6f6f';resDiv.style.color='#cf6f6f';
+        resDiv.textContent=`✗ ${fn} didn't have it. Tough one to call.`;
+      }
+      panel.appendChild(resDiv);
+      resDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
+      setTimeout(()=>resolve({chosen,hit}),1000);
+    };
+
+    panel.querySelector('#pen-a').onclick=()=>resolveChoice(a,tellA.rawStat,fnA);
+    panel.querySelector('#pen-b').onclick=()=>resolveChoice(b,tellB.rawStat,fnB);
+  });
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1299,14 +1414,29 @@ function startMatch(){
     // Track per-round correct/incorrect per player for cockiness/resilience update
     const roundCorrects={};
     const roundIncorrects={};
-    picks.forEach(p=>{roundCorrects[p.name]=0;roundIncorrects[p.name]=0;});
+    picks.forEach(p=>{roundCorrects[p.id]=0;roundIncorrects[p.id]=0;});
 
     // 10 questions per round — team collaborates on each
     const QUESTIONS=10;
     let roundScore=0;
     const roundLines=[];
 
+    // "The Pen" — roughly 1 in 4 rounds, one question is decided by the player
+    const penTriggers=rnd(0,99)<25;
+    const penQuestionIdx=penTriggers?rnd(2,7):-1; // never the very first or last question
+
     for(let q=0;q<QUESTIONS;q++){
+      if(q===penQuestionIdx){
+        const penResult=await showThePen(picks,playerState,roundObj,isSpecial,ticker);
+        if(penResult.hit) roundScore++;
+        roundLines.push({lineClass:penResult.hit?'tick-good':'tick-bad',commentary:`Q${q+1}: The Pen — ${penResult.chosen.name.split(' ')[0]} had the call. ${penResult.hit?'Right.':'Wrong.'}`,q});
+        if(penResult.hit){
+          roundCorrects[penResult.chosen.id]=(roundCorrects[penResult.chosen.id]||0)+1;
+        } else {
+          roundIncorrects[penResult.chosen.id]=(roundIncorrects[penResult.chosen.id]||0)+1;
+        }
+        continue;
+      }
       // Shuffle player order — passing around the table
       const order=[...picks].sort(()=>Math.random()-0.5);
       let answered=false;
@@ -1355,11 +1485,11 @@ function startMatch(){
         if(correct){
           answered=true;
           if(isSpecialist) specialistGotIt=true;
-          roundCorrects[p.name]=(roundCorrects[p.name]||0)+1;
+          roundCorrects[p.id]=(roundCorrects[p.id]||0)+1;
           attemptedBy.push({name:firstName,got:true,statVal:playerStat,socialBoost,highSocial:ps.currentSocial>=70});
           break;
         } else {
-          roundIncorrects[p.name]=(roundIncorrects[p.name]||0)+1;
+          roundIncorrects[p.id]=(roundIncorrects[p.id]||0)+1;
           attemptedBy.push({name:firstName,got:false,statVal:playerStat,socialBoost,highSocial:ps.currentSocial>=70});
           // Apply boost to next player's stat (handled at top of next iteration via bump)
           if(socialBoost>0&&next){
@@ -1470,8 +1600,8 @@ function startMatch(){
       picks.forEach(p=>{
         const ps=playerState[p.id];
         const fn=p.name.split(' ')[0];
-        const corrects=roundCorrects[p.name]||0;
-        const incorrects=roundIncorrects[p.name]||0;
+        const corrects=roundCorrects[p.id]||0;
+        const incorrects=roundIncorrects[p.id]||0;
 
         // Cockiness: correct answers push social up (good in moderation, bad if already high)
         const cockinessRise=Math.round(corrects*(p.stats.cockiness/20));
